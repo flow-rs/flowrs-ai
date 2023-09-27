@@ -1,14 +1,15 @@
 [package]
+
 name = "flowrs-vis"
 version = "0.1.0"
 edition = "2021"
 authors = ["wuermseer.florian@gmail.com", "markus.friedrich@hm.edu"]
 description = "data visualization algorithms for the flowrs library."
-repository = "https://github.com/flow-rs/flowrs-ai"
+repository = "https://github.com/flow-rs/flowrs-vis"
 license = "Apache-2.0"
 license-file = "LICENSE"
 readme = "README.md"
-documentation = "https://docs.rs/flowrs-ai"
+documentation = "https://docs.rs/flowrs-vis"
 keywords = ["flow", "mesh", "point cloud", "voxel", "visualization"]
 categories = []
 
