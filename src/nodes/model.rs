@@ -49,12 +49,12 @@ impl ModelNode
 impl Node for ModelNode
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        run_model();
-        Ok(())
+        let output = run_model();
+        output
     }
 }
 
-fn run_model() {
+fn run_model() -> Result<(), UpdateError> {
     let env = load_environment();
 
     let model_file_path = env::current_dir()
@@ -78,6 +78,10 @@ fn run_model() {
 
     let outputs = session.run::<f32, f32, Dim<IxDynImpl>>(input_tensor);
     print!("Output: {:?}", outputs);
+    match outputs {
+        Ok(_) => Ok(()),
+        Err(_) => panic!("Model Execution failed"),
+    }
 }
 
 fn load_environment() -> Environment {

@@ -8,9 +8,9 @@ mod nodes {
         
         let mut model_node = ModelNode::new(Some(&change_observer));
 
-        model_node.on_update()?;
+        let result = model_node.on_update();
 
-        Ok(assert!(true))
+        Ok(assert!(result.is_ok()))
     }
     
 }
