@@ -24,6 +24,8 @@ pub struct ModelConfig {
    pub model_path: String
 }
 
+
+
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct ModelNode
 {
@@ -53,13 +55,13 @@ impl Node for ModelNode
 }
 
 fn run_model() {
-    let environment = load_environment();
+    let env = load_environment();
 
     let model_file_path = env::current_dir()
         .expect("Failed to obtain current directory")
         .join("src/models/squeezenet1.0-12.onnx");
 
-    let mut session = load_session(&environment, model_file_path);
+    let mut session = load_session(&env, model_file_path);
 
     let input_shape: Vec<usize> = get_input_shape(&session)
         .expect("Failed to read input dimension");
