@@ -1,5 +1,6 @@
-use std::{env, error::Error, path::PathBuf, fmt::Debug};
-
+use std::{env, error::Error, path::PathBuf, fmt::Debug, collections::HashMap};
+use image::{imageops::FilterType, ImageBuffer, Pixel, Rgb};
+use ndarray::s;
 use flowrs::RuntimeConnectable;
 use flowrs::{
     connection::{Input, Output},
@@ -7,24 +8,16 @@ use flowrs::{
 };
 use serde::{Deserialize, Serialize};
 
-use onnxruntime::{
-    environment::Environment, 
-    LoggingLevel, 
-    GraphOptimizationLevel, 
-    session::Session
-};
-
-use ndarray::{IxDynImpl, 
-    Dim, 
-    Array
+use wonnx::{
+    Session,
+    utils::OutputTensor,
+    WonnxError
 };
 
 #[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct ModelConfig {
    pub model_path: String
 }
-
-
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct ModelNode
@@ -55,61 +48,68 @@ impl Node for ModelNode
 }
 
 fn run_model() -> Result<(), UpdateError> {
-    let env = load_environment();
-
-    let model_file_path = env::current_dir()
-        .expect("Failed to obtain current directory")
-        .join("src/models/squeezenet1.0-12.onnx");
-
-    let mut session = load_session(&env, model_file_path);
-
-    let input_shape: Vec<usize> = get_input_shape(&session)
-        .expect("Failed to read input dimension");
-
-    let input_size = input_shape.clone().into_iter()
-        .reduce(|a, b| a * b)
-        .expect("Failed to read input size");
-
-    let array = Array::linspace(0.0_f32, 1.0, input_size as usize)
-        .into_shape(input_shape)
-        .expect("Failed to create input");
-
-    let input_tensor = vec![array];
-
-    let outputs = session.run::<f32, f32, Dim<IxDynImpl>>(input_tensor);
-    print!("Output: {:?}", outputs);
-    match outputs {
-        Ok(_) => Ok(()),
-        Err(_) => panic!("Model Execution failed"),
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        println!("test!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+        pollster::block_on(run());
+        Ok(())
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        // std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+        //  console_log::init().expect("could not initialize logger");
+        wasm_bindgen_futures::spawn_local(run());
     }
 }
 
-fn load_environment() -> Environment {
-    Environment::builder()
-        .with_name("test_env")
-        .with_log_level(LoggingLevel::Verbose)
-        .build()
-        .expect("Failed to create ONNX Runtime environment.")
+async fn run() {
+    println!("run");
+    execute_gpu().await.unwrap();
 }
 
-fn load_session(environment: &Environment, model_file_path: PathBuf) -> Session<'_> {
-    environment
-        .new_session_builder()
-        .expect("Failed to create session builder.")
-        .with_optimization_level(GraphOptimizationLevel::Basic)
-        .expect("Failed to set optimization level.")
-        .with_number_threads(1)
-        .expect("Failed to set the number of threads.")
-        .with_model_from_file(model_file_path)
-        .expect("Failed to load the model from file.")
+async fn execute_gpu() -> Result<HashMap<String, OutputTensor>, WonnxError> {
+    let mut input_data = HashMap::new();
+    let image = load_image();
+    input_data.insert("data".to_string(), image.as_slice().unwrap().into());
+
+    let model_file_path = env::current_dir()
+        .expect("Failed to obtain current directory")
+        .join("src/models/opt-squeeze.onnx");
+    println!("Path Loaded: {:?}", model_file_path);
+    let session = Session::from_path(model_file_path).await.expect("Failed to load Session");
+    let result = session.run(&input_data).await?;
+    println!("Result: {:?}", result);
+    Ok(result)
 }
 
-fn get_input_shape(session: &Session<'_>) -> Result<Vec<usize>, Box<dyn Error>> {
-    let dimensions: Result<Vec<_>, _> = session.inputs[0]
-        .dimensions()
-        .map(|d| d.ok_or("Failure"))
-        .collect();
-    Ok(dimensions?)
+// TODO: Put Seperate Image Loading and Preprocessing
+fn load_image() -> ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 4]>> {
+    let image_path = env::current_dir()
+    .expect("Failed to obtain current directory")
+    .join("src/images/7.jpg");
+
+    let image_buffer: ImageBuffer<Rgb<u8>, Vec<u8>> = image::open(image_path)
+        .unwrap()
+        .resize_to_fill(224, 224, FilterType::Nearest)
+        .to_rgb8();
+
+    let mut array = ndarray::Array::from_shape_fn((1, 3, 224, 224), |(_, c, j, i)| {
+        let pixel = image_buffer.get_pixel(i as u32, j as u32);
+        let channels = pixel.channels();
+
+        (channels[c] as f32) / 255.0
+    });
+
+  
+    let mean = [0.485, 0.456, 0.406];
+    let std = [0.229, 0.224, 0.225];
+    for c in 0..3 {
+        let mut channel_array = array.slice_mut(s![0, c, .., ..]);
+        channel_array -= mean[c];
+        channel_array /= std[c];
+    }
+
+    array
 }
 
 
