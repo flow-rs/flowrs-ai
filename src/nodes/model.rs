@@ -1,4 +1,5 @@
-use std::{env, error::Error, path::PathBuf, fmt::Debug, collections::HashMap};
+use std::borrow::Borrow;
+use std::{env, fmt::Debug, collections::HashMap};
 use image::{imageops::FilterType, ImageBuffer, Pixel, Rgb};
 use ndarray::s;
 use flowrs::RuntimeConnectable;
@@ -26,6 +27,7 @@ pub struct ModelNode
     pub input: Input<ModelConfig>,
     #[output]
     pub output: Output<i32>,
+    pub model_config: Option<ModelConfig>,
 }
 
 
@@ -35,6 +37,7 @@ impl ModelNode
         Self {
             input: Input::new(),
             output: Output::new(change_observer),
+            model_config: None,
         }
     }
 }
@@ -42,47 +45,37 @@ impl ModelNode
 impl Node for ModelNode
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        let output = run_model();
-        output
+        if let Ok(input) = self.input.next() {
+            self.model_config = Some(input);
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let config = self.model_config.clone().unwrap();
+            let _ = pollster::block_on(run(config)).unwrap();
+            Ok(())
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            wasm_bindgen_futures::spawn_local(run());
+            Ok(())
+        }
     }
 }
 
-fn run_model() -> Result<(), UpdateError> {
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        println!("test!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-        pollster::block_on(run());
-        Ok(())
-    }
-    #[cfg(target_arch = "wasm32")]
-    {
-        // std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-        //  console_log::init().expect("could not initialize logger");
-        wasm_bindgen_futures::spawn_local(run());
-    }
-}
-
-async fn run() {
-    println!("run");
-    execute_gpu().await.unwrap();
-}
-
-async fn execute_gpu() -> Result<HashMap<String, OutputTensor>, WonnxError> {
+async fn run(model_config: ModelConfig) -> Result<HashMap<String, OutputTensor>, WonnxError> {
     let mut input_data = HashMap::new();
     let image = load_image();
     input_data.insert("data".to_string(), image.as_slice().unwrap().into());
 
     let model_file_path = env::current_dir()
         .expect("Failed to obtain current directory")
-        .join("src/models/opt-squeeze.onnx");
-    println!("Path Loaded: {:?}", model_file_path);
+        .join(model_config.model_path);
     let session = Session::from_path(model_file_path).await.expect("Failed to load Session");
     let result = session.run(&input_data).await?;
-    println!("Result: {:?}", result);
     Ok(result)
 }
 
-// TODO: Put Seperate Image Loading and Preprocessing
+// TODO: Seperate Image Loading and Preprocessing
 fn load_image() -> ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 4]>> {
     let image_path = env::current_dir()
     .expect("Failed to obtain current directory")
