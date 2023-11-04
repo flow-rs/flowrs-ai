@@ -1,0 +1,35 @@
+[package]
+
+name = "flowrs-ai"
+version = "0.1.0"
+edition = "2021"
+authors = ["wuermseer.florian@gmail.com", "markus.friedrich@hm.edu"]
+description = "data visualization algorithms for the flowrs library."
+repository = "https://github.com/flow-rs/flowrs-ai"
+license = "Apache-2.0"
+license-file = "LICENSE"
+readme = "README.md"
+documentation = "https://docs.rs/flowrs-ai"
+keywords = ["flow", "deep learning", "machine learning", "object detection"]
+categories = []
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+
+[dependencies]
+anyhow = "1.0.72"
+flowrs = {path = "../../flowrs"}  # "0.1.0"
+flowrs-std = {path = "../../flowrs-std"}
+serde = "1.0.183"
+image = "0.24.7"
+ndarray = "0.15.6"
+nshare = "0.9.0"
+wasm-bindgen = "0.2.87"
+wonnx = "0.5.1"
+pollster = "0.3.0"
+web-sys = "0.3.50"
+
+#[dev-dependencies]
+#wasm-bindgen-test = "0.3.37"
