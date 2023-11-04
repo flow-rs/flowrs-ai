@@ -1,5 +1,5 @@
 use std::{env, fmt::Debug, collections::HashMap};
-use ndarray::{ArrayBase, OwnedRepr, Dim, ArrayD};
+use ndarray::{ArrayD};
 use flowrs::RuntimeConnectable;
 use flowrs::{
     connection::{Input, Output},
@@ -62,8 +62,6 @@ impl Node for ModelNode
         }
         Ok(())
     }
-
-   
 }
 
 async fn run(model_config: ModelConfig, model_input: ArrayD<f32>) -> Result<HashMap<String, OutputTensor>, WonnxError> {

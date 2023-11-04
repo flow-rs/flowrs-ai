@@ -4,7 +4,7 @@ mod nodes {
     use flowrs::{node::{ChangeObserver, Node}, connection::connect};
     use flowrs_std::value::ValueNode;
 
-    use ndarray::{ArrayBase, OwnedRepr, Dim, ArrayD, s};
+    use ndarray::{ArrayD, s};
     use std::{env};
     use image::{imageops::FilterType, ImageBuffer, Pixel, Rgb};
 
