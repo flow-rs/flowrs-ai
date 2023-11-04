@@ -1,5 +1,5 @@
 use std::{env, fmt::Debug, collections::HashMap};
-use ndarray::{ArrayBase, OwnedRepr, Dim};
+use ndarray::{ArrayBase, OwnedRepr, Dim, ArrayD};
 use flowrs::RuntimeConnectable;
 use flowrs::{
     connection::{Input, Output},
@@ -24,7 +24,7 @@ pub struct ModelNode
     #[input]
     pub input_model_config: Input<ModelConfig>,
     #[input]
-    pub model_input: Input<ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>>,
+    pub model_input: Input<ArrayD<f32>>,
     #[output]
     pub output: Output<i32>,
     pub model_config: Option<ModelConfig>,
@@ -62,9 +62,11 @@ impl Node for ModelNode
         }
         Ok(())
     }
+
+   
 }
 
-async fn run(model_config: ModelConfig, model_input: ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>) -> Result<HashMap<String, OutputTensor>, WonnxError> {
+async fn run(model_config: ModelConfig, model_input: ArrayD<f32>) -> Result<HashMap<String, OutputTensor>, WonnxError> {
     let mut input_data = HashMap::new();
     input_data.insert("data".to_string(), model_input.as_slice().unwrap().into());
 
@@ -76,3 +78,4 @@ async fn run(model_config: ModelConfig, model_input: ArrayBase<OwnedRepr<f32>, D
     println!("Result: {:?}", result);
     Ok(result)
 }
+

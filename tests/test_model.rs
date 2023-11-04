@@ -4,7 +4,7 @@ mod nodes {
     use flowrs::{node::{ChangeObserver, Node}, connection::connect};
     use flowrs_std::value::ValueNode;
 
-    use ndarray::{ArrayBase, OwnedRepr, Dim, s};
+    use ndarray::{ArrayBase, OwnedRepr, Dim, ArrayD, s};
     use std::{env};
     use image::{imageops::FilterType, ImageBuffer, Pixel, Rgb};
 
@@ -17,6 +17,7 @@ mod nodes {
         let model_input = load_image();
 
         let change_observer: ChangeObserver = ChangeObserver::new();  
+
         let image_value = ValueNode::new(model_input, Some(&change_observer));
         let mut model_node = ModelNode::new(Some(&change_observer));
         model_node.model_config = Some(model_config);
@@ -46,7 +47,7 @@ mod nodes {
     }
 
 
-    fn load_image() -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>> {
+    fn load_image() -> ArrayD<f32> {
         let image_path = env::current_dir()
         .expect("Failed to obtain current directory")
         .join("src/images/7.jpg");
@@ -72,7 +73,7 @@ mod nodes {
             channel_array /= std[c];
         }
     
-        array
+        array.into_dyn()
     }
     
 }
