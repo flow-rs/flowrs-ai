@@ -1,7 +1,5 @@
-use std::borrow::Borrow;
 use std::{env, fmt::Debug, collections::HashMap};
-use image::{imageops::FilterType, ImageBuffer, Pixel, Rgb};
-use ndarray::s;
+use ndarray::{ArrayBase, OwnedRepr, Dim};
 use flowrs::RuntimeConnectable;
 use flowrs::{
     connection::{Input, Output},
@@ -24,7 +22,9 @@ pub struct ModelConfig {
 pub struct ModelNode
 {
     #[input]
-    pub input: Input<ModelConfig>,
+    pub input_model_config: Input<ModelConfig>,
+    #[input]
+    pub model_input: Input<ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>>,
     #[output]
     pub output: Output<i32>,
     pub model_config: Option<ModelConfig>,
@@ -35,7 +35,8 @@ impl ModelNode
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
-            input: Input::new(),
+            input_model_config: Input::new(),
+            model_input: Input::new(),
             output: Output::new(change_observer),
             model_config: None,
         }
@@ -45,64 +46,33 @@ impl ModelNode
 impl Node for ModelNode
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        if let Ok(input) = self.input.next() {
-            self.model_config = Some(input);
+        if let Ok(input_model_config) = self.input_model_config.next() {
+            self.model_config = Some(input_model_config);
         }
-        #[cfg(not(target_arch = "wasm32"))]
-        {
+        if let Ok(model_input) = self.model_input.next() {
             let config = self.model_config.clone().unwrap();
-            let _ = pollster::block_on(run(config)).unwrap();
-            Ok(())
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                let _ = pollster::block_on(run(config, model_input)).unwrap();
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                wasm_bindgen_futures::spawn_local(run(config));
+            }
         }
-        #[cfg(target_arch = "wasm32")]
-        {
-            wasm_bindgen_futures::spawn_local(run());
-            Ok(())
-        }
+        Ok(())
     }
 }
 
-async fn run(model_config: ModelConfig) -> Result<HashMap<String, OutputTensor>, WonnxError> {
+async fn run(model_config: ModelConfig, model_input: ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>) -> Result<HashMap<String, OutputTensor>, WonnxError> {
     let mut input_data = HashMap::new();
-    let image = load_image();
-    input_data.insert("data".to_string(), image.as_slice().unwrap().into());
+    input_data.insert("data".to_string(), model_input.as_slice().unwrap().into());
 
     let model_file_path = env::current_dir()
         .expect("Failed to obtain current directory")
         .join(model_config.model_path);
-    let session = Session::from_path(model_file_path).await.expect("Failed to load Session");
+    let session = Session::from_path(model_file_path).await?;
     let result = session.run(&input_data).await?;
+    println!("Result: {:?}", result);
     Ok(result)
 }
-
-// TODO: Seperate Image Loading and Preprocessing
-fn load_image() -> ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 4]>> {
-    let image_path = env::current_dir()
-    .expect("Failed to obtain current directory")
-    .join("src/images/7.jpg");
-
-    let image_buffer: ImageBuffer<Rgb<u8>, Vec<u8>> = image::open(image_path)
-        .unwrap()
-        .resize_to_fill(224, 224, FilterType::Nearest)
-        .to_rgb8();
-
-    let mut array = ndarray::Array::from_shape_fn((1, 3, 224, 224), |(_, c, j, i)| {
-        let pixel = image_buffer.get_pixel(i as u32, j as u32);
-        let channels = pixel.channels();
-
-        (channels[c] as f32) / 255.0
-    });
-
-  
-    let mean = [0.485, 0.456, 0.406];
-    let std = [0.229, 0.224, 0.225];
-    for c in 0..3 {
-        let mut channel_array = array.slice_mut(s![0, c, .., ..]);
-        channel_array -= mean[c];
-        channel_array /= std[c];
-    }
-
-    array
-}
-
-
