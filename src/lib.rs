@@ -4,4 +4,4 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 
 pub use self::nodes::clustering;
-
+pub use self::nodes::dimred_cluster_test_node;
