@@ -1,18 +1,12 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::{Array3, ArrayBase, OwnedRepr, Dim, arr2};
-use anyhow::{anyhow};
 use linfa::prelude::*;
 use ndarray::Array2;
 use ndarray::prelude::*;
-use linfa::traits::{Fit, Predict, Transformer};
+use linfa::traits::{Fit, Predict};
 use linfa_reduction::Pca;
-use linfa_reduction::DiffusionMap;
 use linfa_clustering::KMeans;
-use linfa_clustering::Dbscan;
-use linfa_kernel::{Kernel, KernelType, KernelMethod};
-use linfa_preprocessing::linear_scaling::LinearScaler;
 
 use serde::{Deserialize, Serialize};
 
@@ -152,7 +146,7 @@ impl Node for Dimred_Cluster_Test_Node {
 
             // Predict cluster assignments
             let result = model.predict(dataset);
-
+            println!("Result: {:?}\n", result);
             // Output the cluster assignments
             for (point, cluster) in result.records.outer_iter().zip(result.targets.iter()) {
                 println!("Point {:?} is in Cluster {}", point, cluster);
