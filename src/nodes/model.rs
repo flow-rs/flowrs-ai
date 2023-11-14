@@ -44,8 +44,7 @@ impl ModelNode
 }
 
 impl Node for ModelNode
-{
-    
+{  
     fn on_update(&mut self) -> Result<(), UpdateError> {
         if let Ok(input_model_config) = self.input_model_config.next() {
             self.model_config = Some(input_model_config);
