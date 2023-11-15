@@ -8,6 +8,7 @@ use flowrs::{
 };
 use serde::{Deserialize, Serialize};
 
+use futures_executor::block_on;
 use wonnx::{
     Session,
     utils::OutputTensor,
@@ -51,15 +52,7 @@ impl Node for ModelNode
         }
         if let Ok(model_input) = self.model_input.next() {
             let config = self.model_config.clone().unwrap();
-            let res: Result<HashMap<String, OutputTensor, RandomState>, WonnxError>;
-            #[cfg(not(target_arch = "wasm32"))]
-            {
-                res = pollster::block_on(run(config, model_input));
-            }
-            #[cfg(target_arch = "wasm32")]
-            {
-                res = wasm_bindgen_futures::spawn_local(run(config, model_input));
-            }
+            let res: Result<HashMap<String, OutputTensor>, WonnxError> = block_on(run(config, model_input));
             if let Ok(out) = res {
                 for (_, output_tensor) in out {
                     let result = Vec::try_from(output_tensor).unwrap();
