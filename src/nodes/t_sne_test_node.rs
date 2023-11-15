@@ -1,7 +1,6 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::Array2;
 use ndarray::prelude::*;
 use linfa::traits::Transformer;
 use linfa_tsne::TSneParams;
