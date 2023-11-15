@@ -1,9 +1,12 @@
 pub mod cluster;
 pub mod scale;
 pub mod dimred;
-pub mod diffusionmap;
+pub mod maxabsscale;
 pub mod csv2array;
 pub mod normscaler;
 pub mod tsne;
 pub mod standardscale;
-
+pub mod pca;
+pub mod minmaxscale;
+pub mod dbscan;
+pub mod diffusionmap;
