@@ -1,8 +1,7 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::Array2;
-use ndarray::prelude::*;
+use ndarray::{Array2, array};
 use linfa::traits::Transformer;
 use linfa_preprocessing::norm_scaling::NormScaler;
 use serde::{Deserialize, Serialize};

@@ -1,10 +1,9 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::{Array2, Array1};
+use ndarray::{Array2, Array1, array};
 use linfa::dataset::DatasetBase;
 use linfa::traits::Transformer;
-use ndarray::{ArrayBase, OwnedRepr, Dim, array};
 use linfa_clustering::Dbscan;
 use linfa::dataset::Labels;
 use serde::{Deserialize, Serialize};
