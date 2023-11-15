@@ -37,6 +37,8 @@ linfa-reduction = "0.7.0"
 linfa-kernel = "0.7.0"
 linfa-preprocessing = "0.7.0"
 linfa-tsne = "0.7.0"
+csv = "1.1"
+ndarray-csv = "0.5.2"
 
 #[dev-dependencies]
 #wasm-bindgen-test = "0.3.37"

@@ -1,8 +1,7 @@
-pub mod cluster;
-pub mod scale;
+pub mod kmeans;
 pub mod dimred;
 pub mod maxabsscale;
-pub mod csv2array;
+pub mod csv2arrayn;
 pub mod normscaler;
 pub mod tsne;
 pub mod standardscale;
