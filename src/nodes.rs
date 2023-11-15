@@ -1,5 +1,8 @@
 pub mod cluster;
 pub mod scale;
 pub mod dimred;
-pub mod csv_to_array;
+pub mod diffusionmap;
+pub mod csv2array;
+pub mod normscaler;
+pub mod tsne;
 

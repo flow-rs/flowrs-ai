@@ -1,17 +1,9 @@
-use std::ptr::null;
-
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
-
-use flowrs_std::vec;
-use ndarray::{Array3, ArrayBase, OwnedRepr, Dim, arr2};
-use anyhow::{anyhow};
+use ndarray::{Array2, ArrayBase, OwnedRepr, Dim, arr2};
 use linfa::prelude::*;
-use ndarray::Array2;
-use ndarray::prelude::*;
 use linfa::traits::{Fit, Predict};
 use linfa_reduction::Pca;
-use linfa_clustering::KMeans;
 
 use serde::{Deserialize, Serialize};
 
@@ -147,9 +139,8 @@ fn input_output_test() -> Result<(), UpdateError> {
     [-3.347031741680441, -4.147375003300382],
     [-4.622799446757189, 10.4931265494172]], shape=[10, 2], strides=[2, 1], layout=Cc (0x5), const ndim=2";
 
-    let dataset_strings = dataset
-        .records();
+    //let dataset_strings = dataset.records();
 
-
+ 
     Ok(assert!(expected == expected))
 }

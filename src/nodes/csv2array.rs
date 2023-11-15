@@ -1,9 +1,6 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
-
-use ndarray::{Array3, ArrayBase, OwnedRepr, Dim, arr2};
-use anyhow::{anyhow};
-use ndarray::Array2;
+use ndarray::{Array2, arr2};
 use serde::{Deserialize, Serialize};
 
 
