@@ -5,4 +5,5 @@ pub mod diffusionmap;
 pub mod csv2array;
 pub mod normscaler;
 pub mod tsne;
+pub mod standardscale;
 
