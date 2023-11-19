@@ -1,6 +1,7 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
+use ndarray::prelude::*;
 use ndarray::{Array2, Array1, array};
 use linfa::dataset::DatasetBase;
 use linfa::traits::Transformer;
@@ -15,7 +16,7 @@ pub struct DbscanNode {
     pub output: Output<DatasetBase<Array2<f64>, Array1<Option<usize>>>>,
 
     #[input]
-    pub input: Input<Array2<f64>>,
+    pub input: Input<DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<()>, Dim<[usize; 1]>>>>,
 }
 
 impl DbscanNode {
@@ -31,10 +32,10 @@ impl Node for DbscanNode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(data) = self.input.next() {
-            println!("JW-Debug PCANode has received: {}.", data);
+            println!("JW-Debug PCANode has received: {}.", data.records);
 
             // transform to DatasetBase
-            let dataset = DatasetBase::from(data);
+            //let dataset = DatasetBase::from(data);
 
             // parameter
             let min_points = 2;
@@ -43,7 +44,7 @@ impl Node for DbscanNode {
             // dbscan
             let clusters = Dbscan::params(min_points)
                 .tolerance(tolerance)
-                .transform(dataset)
+                .transform(data)
                 .unwrap();
             
             // debug
@@ -66,7 +67,7 @@ impl Node for DbscanNode {
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let test_input: Array2<f64> = array![[1.1, 2.5, 3.2, 4.6, 5.2, 6.7],
+    let data: Array2<f64> = array![[1.1, 2.5, 3.2, 4.6, 5.2, 6.7],
                                         [7.8, 8.2, 9.5, 10.3, 11.0, 12.0],
                                         [13.0, 14.0, 15.0, 1.0, 2.0, 3.0],
                                         [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
@@ -76,6 +77,8 @@ fn input_output_test() -> Result<(), UpdateError> {
                                         [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
                                         [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
                                         [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
+
+    let test_input = DatasetBase::from(data);
 
     let mut and: DbscanNode<> = DbscanNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
