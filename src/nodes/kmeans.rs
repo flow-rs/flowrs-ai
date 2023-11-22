@@ -15,7 +15,7 @@ pub struct KmeansNode { // <--- Wenn man eine neue Node anlegt, einfach alles ko
     pub output: Output<DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<usize>, Dim<[usize; 1]>>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
 
     #[input]
-    pub input: Input<Array2<f64>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
+    pub input: Input<DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<()>, Dim<[usize; 1]>>>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
 
     // Das bedeutet, unsere Node braucht als Input einen Array2<u8> und liefert als Output einen Array2<u8>
 }
@@ -38,7 +38,7 @@ impl Node for KmeansNode {
 
         // Hier überprüfen wir nur, ob ein input da ist und der passt
         if let Ok(node_data) = self.input.next() {
-            println!("JW-Debug: KmeansNode has received: {}.", node_data);
+            println!("JW-Debug: KmeansNode has received: {}.", node_data.records);
 
             // #############################################################################
             // #############################################################################
@@ -47,16 +47,16 @@ impl Node for KmeansNode {
             // #############################################################################
 
             // Need to use DatasetBase!
-            let dataset: DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(node_data.clone());
+            //let dataset: DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<usize>, Dim<[usize; 1]>>> = DatasetBase::from(node_data.clone());
 
             let model = KMeans::params(3)
             .max_n_iterations(200)
             .tolerance(1e-5)
-            .fit(&dataset)
+            .fit(&node_data)
             .expect("Error while fitting KMeans to the dataset");
 
             // Predict cluster assignments
-            let result = model.predict(dataset);
+            let result = model.predict(node_data);
             println!("Result: {:?}\n", result);
 
             // #############################################################################
@@ -82,7 +82,8 @@ impl Node for KmeansNode {
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let test_input: Array2<f64> = array![[1.0, 2.0, 3.0, 4.0], [3.0, 4.0, 5.0, 6.0], [5.0, 6.0, 7.0, 8.0], [7.0, 4.0, 1.0, 9.0]];
+    let data: Array2<f64> = array![[1.0, 2.0, 3.0, 4.0], [3.0, 4.0, 5.0, 6.0], [5.0, 6.0, 7.0, 8.0], [7.0, 4.0, 1.0, 9.0]];
+    let test_input: DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(data);
 
     let mut and: KmeansNode<> = KmeansNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
@@ -91,6 +92,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     and.on_update()?;
 
     let expected = array![1, 0 , 0, 2];
+    
     let actual: DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<usize>, Dim<[usize; 1]>>> = mock_output.next()?;
 
     Ok(assert!(expected == actual.targets()))
