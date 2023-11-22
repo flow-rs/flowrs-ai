@@ -14,4 +14,5 @@ pub use self::nodes::minmaxscale;
 pub use self::nodes::tsne;
 pub use self::nodes::maxnormscaler;
 pub use self::nodes::convertndarray2datasetbase;
+pub use self::nodes::csvToArrayN;
 

@@ -21,10 +21,10 @@ mod nodes {
                     kmeans::KmeansNode,
                     maxabsscale::{MaxAbsScleNode, self},
                     minmaxscale::{MinMaxScaleNode, self},
-                    l2normscaler::{NormscalerNode, self},
+                    l2normscaler::{L2NormscalerNode, self},
                     pca::PCANode,
                     standardscale::{StandardscaleNode, self},
-                    tsne::{TsneNode, self}};
+                    tsne::{TsneNode, self}, convertndarray2datasetbase::ConvertNdarray2DatasetBase, csvToArrayN::CSVToDatasetBaseConfig};
     use flowrs_std::{
         debug::DebugNode,
         timer::{TimerStrategy, WaitTimer},
@@ -53,6 +53,12 @@ mod nodes {
 
         // TestData
         let test_input = String::from("Feature1,Feature2,Freature3,Feature4\n1.0,2.0,3.0,4.0\n3.0,4.0,5.0,6.0\n5.0,6.0,7.0,8.0\n7.0,4.0,1.0,9.0");
+        let test_data_input = String::from("Feate1,Feature2,Feature3\n1,2,3\n4,5,6\n7,8,9");
+        let test_config_input = CSVToDatasetBaseConfig{
+            separator: b',',
+            has_feature_names: true
+        };
+
 
         let value_node = ValueNode::new(
             test_input,
@@ -65,23 +71,25 @@ mod nodes {
         let kmeans_node: KmeansNode<> = KmeansNode::new(Some(&change_observer));
         let maxabsscale_node: MaxAbsScleNode<> = MaxAbsScleNode::new(Some(&change_observer));
         let minmaxscale_node: MinMaxScaleNode<> = MinMaxScaleNode::new(Some(&change_observer));
-        let normscaler_node: NormscalerNode<> = NormscalerNode::new(Some(&change_observer));
+        let l2normscaler_node: L2NormscalerNode<> = L2NormscalerNode::new(Some(&change_observer));
         let pca_node: PCANode<> = PCANode::new(Some(&change_observer));
+        let pca_node: L2NormscalerNode<> = L2NormscalerNode::new(Some(&change_observer));
         let standardscale_node: StandardscaleNode<> = StandardscaleNode::new(Some(&change_observer));
         let tsne_node: TsneNode<> = TsneNode::new(Some(&change_observer));
         let debug_node = DebugNode::<DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<usize>, Dim<[usize; 1]>>>>::new(Some(&change_observer));
+        let convertndarray2datasetbase: ConvertNdarray2DatasetBase<> = ConvertNdarray2DatasetBase::new(Some(&change_observer));
+
 
         connect(value_node.output.clone(), csv2arrayn_node.input.clone());
-        connect(csv2arrayn_node.output.clone(), normscaler_node.input.clone());
-        connect(normscaler_node.output.clone(), pca_node.input.clone());
+        connect(csv2arrayn_node.output.clone(), l2normscaler_node.input.clone());
+        connect(l2normscaler_node.output.clone(), pca_node.input.clone());
         connect(pca_node.output.clone(), kmeans_node.input.clone());
         connect(kmeans_node.output.clone(), debug_node.input.clone());
 
         let mut flow: Flow = Flow::new_empty();
         flow.add_node(value_node);
         flow.add_node(csv2arrayn_node);
-        flow.add_node(normscaler_node);
-        flow.add_node(pca_node);
+        flow.add_node(l2normscaler_node);
         flow.add_node(kmeans_node);
         flow.add_node(debug_node);
 

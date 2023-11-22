@@ -12,3 +12,4 @@ pub mod diffusionmap;
 pub mod l1normscaler;
 pub mod maxnormscaler;
 pub mod convertndarray2datasetbase;
+pub mod csvToArrayN;
