@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 // Definition eines Structs
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct NormscalerNode { // <--- Wenn man eine neue Node anlegt, einfach alles kopieren und hier den Namen ändern
+pub struct L2NormscalerNode { // <--- Wenn man eine neue Node anlegt, einfach alles kopieren und hier den Namen ändern
     #[output]
     pub output: Output<Array2<f64>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
 
@@ -20,7 +20,7 @@ pub struct NormscalerNode { // <--- Wenn man eine neue Node anlegt, einfach alle
 }
 
 // Das ist einfach der Konstruktur
-impl NormscalerNode {
+impl L2NormscalerNode {
     // Hier will der Konstruktur als einzigen Parameter einen ChangeObserver
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
@@ -31,13 +31,13 @@ impl NormscalerNode {
 }
 
 // Hier befinden sich die Methoden von unserer Node. Wir verwenden erstmal nur die Methoden, welche wir implementieren müssen, da diese von "Node" vorgegeben werden.
-impl Node for NormscalerNode {
+impl Node for L2NormscalerNode {
     // on_update wird von der Pipeline automatisch getriggert, wenn diese Node einen Input bekommt.
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         // Hier überprüfen wir nur, ob ein input da ist und der passt
         if let Ok(node_data) = self.input.next() {
-            println!("JW-Debug: NormscalerNode has received: {}.", node_data);
+            println!("JW-Debug: L2NormscalerNode has received: {}.", node_data);
 
             // #############################################################################
             // #############################################################################
@@ -79,7 +79,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
     let test_input: Array2<f64> = array![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
 
-    let mut and: NormscalerNode<> = NormscalerNode::new(Some(&change_observer));
+    let mut and: L2NormscalerNode<> = L2NormscalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.input.send(test_input)?;

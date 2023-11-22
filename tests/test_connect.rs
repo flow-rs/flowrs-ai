@@ -21,7 +21,7 @@ mod nodes {
                     kmeans::KmeansNode,
                     maxabsscale::{MaxAbsScleNode, self},
                     minmaxscale::{MinMaxScaleNode, self},
-                    normscaler::{NormscalerNode, self},
+                    l2normscaler::{NormscalerNode, self},
                     pca::PCANode,
                     standardscale::{StandardscaleNode, self},
                     tsne::{TsneNode, self}};
