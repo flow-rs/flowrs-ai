@@ -38,12 +38,8 @@ impl Node for ConvertNdarray2DatasetBase {
         if let Ok(node_data) = self.input.next() {
             println!("JW-Debug: ConvertNdarray2DatasetBase has received: {}.", node_data);
 
-            //let dataset: DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(node_data.clone());
             let dataset = Dataset::from(node_data.clone());
 
-            //println!("Transformed ndarray from\n {} \n to datasetbase:\n {}", node_data, dataset.records);
-
-            let blub: ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>> = dataset.targets.clone();
             println!("DatasetBase\n");
             println!("Records:\n {}\n", dataset.records);
             println!("Targets:\n {:?}\n", dataset.targets);

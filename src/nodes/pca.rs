@@ -1,8 +1,10 @@
+use std::arch::x86_64::_MM_EXCEPT_DENORM;
+
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
 use ndarray::{Array2, array, ArrayBase, Dim, OwnedRepr};
-use linfa::dataset::DatasetBase;
+use linfa::{Dataset, DatasetBase};
 use linfa_reduction::Pca;
 use linfa::traits::{Fit, Predict};
 use serde::{Deserialize, Serialize};
@@ -11,7 +13,7 @@ use serde::{Deserialize, Serialize};
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct PCANode {
     #[output]
-    pub output: Output<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>,
+    pub output: Output<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>>>,
 
     #[input]
     pub input: Input<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>
@@ -41,22 +43,30 @@ impl Node for PCANode {
             let embedding = Pca::params(embedding_size)
                 .fit(&data)
                 .unwrap();
-            let output: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>;
+            let output: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>>;
             let dataset = embedding.predict(data);
 
+            let mydata: ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>> = dataset.targets.clone();
+            
+           let myoutput: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(dataset.records.clone(), dataset.targets.clone());
+
             println!("DatasetBase\n");
-            println!("Records:\n {}\n", dataset.records);
-            println!("Targets:\n {:?}\n", dataset.targets);
-            println!("Feature names:\n {:?}\n", dataset.feature_names());
+            println!("Records:\n {}\n", dataset.records.clone());
+            println!("Targets:\n {:?}\n", dataset.targets.clone());
+            println!("Feature names:\n {:?}\n", dataset.feature_names().clone());
+
+            //output.records = dataset.records.clone();
+            
+            //output.targets = mydata.clone();
+            //output.records = dataset.record.clone();
+
 
             //output.records = reduced_dataset.records;
             //output.targets = reduced_dataset.targets;
             //let reduced_dataset: Output<DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<()>, Dim<[usize; 1]>>>> = embedding.predict(data);
             
-            // debug
-            //println!("Pca: {}", reduced_dataset.targets);
 
-            //self.output.send(reduced_dataset).map_err(|e| UpdateError::Other(e.into()))?;
+            self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }
@@ -64,7 +74,7 @@ impl Node for PCANode {
 
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
-    /*let change_observer = ChangeObserver::new();
+    let change_observer = ChangeObserver::new();
     let test_input: Array2<f64> = array![[1.1, 2.5, 3.2, 4.6, 5.2, 6.7], 
                                          [7.8, 8.2, 9.5, 10.3, 11.0, 12.0], 
                                          [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
@@ -75,14 +85,14 @@ fn input_output_test() -> Result<(), UpdateError> {
                                          [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
                                          [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
-
+    let dataset = Dataset::from(test_input.clone());
     let mut and: PCANode<> = PCANode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.input.send(test_input)?;
+    and.input.send(dataset)?;
     and.on_update()?;
 
-    let expected: Array2<f64> = array![[-3.076047733203457, -10.562293260063301],
+    let expected_data: Array2<f64> = array![[-3.076047733203457, -10.562293260063301],
                                        [-3.561730416569943, 3.951032231750752],
                                        [14.63575200500477, 1.1072539713398344], 
                                        [-3.347031741680441, -4.147375003300382],
@@ -92,8 +102,21 @@ fn input_output_test() -> Result<(), UpdateError> {
                                        [14.63575200500477, 1.1072539713398344],
                                        [-3.347031741680441, -4.147375003300382],
                                        [-4.622799446757189, 10.4931265494172]];
-    let actual: Array2<f64> = mock_output.next()?;
+    let expected = Dataset::from(expected_data.clone());
 
-    Ok(assert!(expected == actual))*/
-    Ok(assert!(true))
+    let actual = mock_output.next()?;
+
+
+    println!("Actual\n");
+    println!("Records:\n {}\n", actual.records.clone());
+    println!("Targets:\n {:?}\n", actual.targets.clone());
+    println!("Feature names:\n {:?}\n", actual.feature_names().clone());
+
+    println!("Expected\n");
+    println!("Records:\n {}\n", expected.records.clone());
+    println!("Targets:\n {:?}\n", expected.targets.clone());
+    println!("Feature names:\n {:?}\n", expected.feature_names().clone());
+
+
+    Ok(assert!(expected.records == actual.targets))
 }
