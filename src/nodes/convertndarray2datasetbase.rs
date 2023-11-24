@@ -14,9 +14,8 @@ pub struct ConvertNdarray2DatasetBase { // <--- Wenn man eine neue Node anlegt, 
     pub input: Input<Array2<f64>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
 
     #[output]
-    pub output: Output<DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<()>, Dim<[usize; 1]>>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
-
-    // Das bedeutet, unsere Node braucht als Input einen Array2<u8> und liefert als Output einen Array2<u8>
+    //pub output: Output<DatasetBase<(), ndarray::ArrayBase<ndarray::OwnedRepr<f64>, ndarray::Dim<[usize; 2]>>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
+    pub output: Output<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>
 }
 
 // Das ist einfach der Konstruktur
@@ -39,9 +38,16 @@ impl Node for ConvertNdarray2DatasetBase {
         if let Ok(node_data) = self.input.next() {
             println!("JW-Debug: ConvertNdarray2DatasetBase has received: {}.", node_data);
 
-            let dataset: DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(node_data.clone());
+            //let dataset: DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(node_data.clone());
+            let dataset = Dataset::from(node_data.clone());
 
-            println!("Transformed ndarray from\n {} \n to datasetbase:\n {}", node_data, dataset.records);
+            //println!("Transformed ndarray from\n {} \n to datasetbase:\n {}", node_data, dataset.records);
+
+            let blub: ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>> = dataset.targets.clone();
+            println!("DatasetBase\n");
+            println!("Records:\n {}\n", dataset.records);
+            println!("Targets:\n {:?}\n", dataset.targets);
+            println!("Feature names:\n {:?}\n", dataset.feature_names());
 
             // Hier schicken wir node_data als output an die nächste node bzw. den output
             self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
