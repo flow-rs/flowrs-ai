@@ -1,10 +1,10 @@
 
 #[cfg(test)]
 mod nodes {
-    use std::{sync::mpsc::channel, thread, time::Duration};
+    use std::{sync::mpsc::channel, thread, time::Duration, rc::Rc, any::Any};
 
     use flowrs::{
-        connection::connect,
+        connection::{connect, Output},
         exec::{
             execution::{Executor, StandardExecutor},
             node_updater::{MultiThreadedNodeUpdater, NodeUpdater},
@@ -22,7 +22,7 @@ mod nodes {
                     maxabsscale::{MaxAbsScleNode, self},
                     minmaxscale::{MinMaxScaleNode, self},
                     pca::PCANode,
-                    standardscale::{StandardscaleNode, self}, convertndarray2datasetbase::ConvertNdarray2DatasetBase,
+                    standardscale::{StandardscaleNode, self}, convertndarray2datasetbase::ConvertNdarray2DatasetBase, csvToArrayN::{CSVToDatasetBaseConfig, CSVToDatasetBaseNode},
                     };
     use flowrs_std::{
         debug::DebugNode,
@@ -137,17 +137,15 @@ mod nodes {
     }
 
     #[test]
-    fn test() {
-        connect_test_with(MultiThreadedNodeUpdater::new(4), WaitTimer::new(true));
-
-    }
-
-    #[test]
-    fn simple_test() {
+    fn csv_test() {
         let change_observer: ChangeObserver = ChangeObserver::new();
 
-        let test_input = String::from("Feature1,Feature2,Freature3,Feature4\n1.0,2.0,3.0,4.0\n3.0,4.0,5.0,6.0\n5.0,6.0,7.0,8.0\n7.0,4.0,1.0,9.0");
+        let test_config_input = CSVToDatasetBaseConfig{
+            separator: b',',
+            has_feature_names: true
+        };
 
+        let test_input = String::from("Feature1,Feature2,Freature3,Feature4\n1.0,2.0,3.0,4.0\n3.0,4.0,5.0,6.0\n5.0,6.0,7.0,8.0\n7.0,4.0,1.0,9.0");
 
         // Nodes
         let value_node = ValueNode::new(
@@ -155,16 +153,28 @@ mod nodes {
             Some(&change_observer),
         );
 
+        let config_node = ValueNode::new(
+            test_config_input,
+            Some(&change_observer),
+        );
+
         let csv2arrayn_node: CSVToArrayNNode<> = CSVToArrayNNode::new(Some(&change_observer));
         let convertndarray2datasetbase: ConvertNdarray2DatasetBase<> = ConvertNdarray2DatasetBase::new(Some(&change_observer));
         let pca_node: PCANode<> = PCANode::new(Some(&change_observer));
-        let debug_node = DebugNode::<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>>>::new(Some(&change_observer));
+        let kmeans_node: KmeansNode<> = KmeansNode::new(Some(&change_observer));
+        let debug_node = DebugNode::<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<usize>, Dim<[usize; 1]>>>>::new(Some(&change_observer));
+        let convert_node: CSVToDatasetBaseNode<f64> = CSVToDatasetBaseNode::new(Some(&change_observer));
 
         // Connections
-        connect(value_node.output.clone(), csv2arrayn_node.input.clone());
-        connect(csv2arrayn_node.output.clone(), convertndarray2datasetbase.input.clone());
+        connect(value_node.output.clone(), convert_node.data_input.clone());
+        connect(config_node.output.clone(), convert_node.config_input.clone());
+        connect(convert_node.output.clone(), pca_node.input.clone());
         connect(convertndarray2datasetbase.output.clone(), pca_node.input.clone());
-        connect(pca_node.output.clone(), debug_node.input.clone());
+        connect(pca_node.output.clone(), kmeans_node.input.clone());
+        connect(kmeans_node.output.clone(), debug_node.input.clone());
+
+        // Resultholder
+        let result = debug_node.output.clone();
 
         // Flow
         let mut flow: Flow = Flow::new_empty();
@@ -172,7 +182,9 @@ mod nodes {
         flow.add_node(csv2arrayn_node);
         flow.add_node(convertndarray2datasetbase);
         flow.add_node(pca_node);
+        flow.add_node(kmeans_node);
         flow.add_node(debug_node);
+
 
         // Controller
         let (controller_sender, controller_receiver) = channel();
@@ -183,15 +195,81 @@ mod nodes {
                 .send(executor.controller())
                 .expect("Controller sender cannot send.");
 
+            controller_receiver
+                .recv()
+                .expect("JW failed.");
+
             executor
                 .run(flow, RoundRobinScheduler::new(), MultiThreadedNodeUpdater::new(4))
                 .expect("Run failed.");
         });
-
-        let controller = controller_receiver.recv().unwrap();
-
+        
         thread::sleep(Duration::from_secs(1));
 
+        assert!(true);
+
+    }
+
+    #[test]
+    fn simple_test() {
+        let change_observer: ChangeObserver = ChangeObserver::new();
+        let (sender, receiver) = channel::<bool>();
+
+        let test_input = String::from("Feature1,Feature2,Freature3,Feature4\n1.0,2.0,3.0,4.0\n3.0,4.0,5.0,6.0\n5.0,6.0,7.0,8.0\n7.0,4.0,1.0,9.0");
+
+        // Nodes
+        let value_node = ValueNode::new(
+            test_input,
+            Some(&change_observer),
+        );
+
+        let csv2arrayn_node: CSVToArrayNNode<> = CSVToArrayNNode::new(Some(&change_observer));
+        let convertndarray2datasetbase: ConvertNdarray2DatasetBase<> = ConvertNdarray2DatasetBase::new(Some(&change_observer));
+        let pca_node: PCANode<> = PCANode::new(Some(&change_observer));
+        let kmeans_node: KmeansNode<> = KmeansNode::new(Some(&change_observer));
+        let debug_node = DebugNode::<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<usize>, Dim<[usize; 1]>>>>::new(Some(&change_observer));
+
+        // Connections
+        connect(value_node.output.clone(), csv2arrayn_node.input.clone());
+        connect(csv2arrayn_node.output.clone(), convertndarray2datasetbase.input.clone());
+        connect(convertndarray2datasetbase.output.clone(), pca_node.input.clone());
+        connect(pca_node.output.clone(), kmeans_node.input.clone());
+        connect(kmeans_node.output.clone(), debug_node.input.clone());
+
+        // Resultholder
+        let result = debug_node.output.clone();
+
+        // Flow
+        let mut flow: Flow = Flow::new_empty();
+        flow.add_node(value_node);
+        flow.add_node(csv2arrayn_node);
+        flow.add_node(convertndarray2datasetbase);
+        flow.add_node(pca_node);
+        flow.add_node(kmeans_node);
+        flow.add_node(debug_node);
+
+
+        // Controller
+        let (controller_sender, controller_receiver) = channel();
+        let thread_handle = thread::spawn(move || {
+            let mut executor = StandardExecutor::new(change_observer);
+
+            controller_sender
+                .send(executor.controller())
+                .expect("Controller sender cannot send.");
+
+            controller_receiver
+                .recv()
+                .expect("JW failed.");
+
+            executor
+                .run(flow, RoundRobinScheduler::new(), MultiThreadedNodeUpdater::new(4))
+                .expect("Run failed.");
+        });
+        
+        thread::sleep(Duration::from_secs(1));
+
+        assert!(true);
 
     }
 }

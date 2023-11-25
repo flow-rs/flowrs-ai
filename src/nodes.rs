@@ -9,3 +9,4 @@ pub mod minmaxscale;
 pub mod dbscan;
 pub mod diffusionmap;
 pub mod convertndarray2datasetbase;
+pub mod csvToArrayN;

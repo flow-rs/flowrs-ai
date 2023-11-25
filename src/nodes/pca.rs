@@ -43,12 +43,9 @@ impl Node for PCANode {
             let embedding = Pca::params(embedding_size)
                 .fit(&data)
                 .unwrap();
-            let output: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>>;
             let dataset = embedding.predict(data);
-
-            let mydata: ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>> = dataset.targets.clone();
             
-           let myoutput: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(dataset.records.clone(), dataset.targets.clone());
+            let myoutput: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(dataset.records.clone(), dataset.targets.clone());
 
             println!("DatasetBase\n");
             println!("Records:\n {}\n", dataset.records.clone());
@@ -102,7 +99,7 @@ fn input_output_test() -> Result<(), UpdateError> {
                                        [14.63575200500477, 1.1072539713398344],
                                        [-3.347031741680441, -4.147375003300382],
                                        [-4.622799446757189, 10.4931265494172]];
-    let expected = Dataset::from(expected_data.clone());
+    let expected: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(test_input.clone(), expected_data.clone());
 
     let actual = mock_output.next()?;
 
@@ -118,5 +115,5 @@ fn input_output_test() -> Result<(), UpdateError> {
     println!("Feature names:\n {:?}\n", expected.feature_names().clone());
 
 
-    Ok(assert!(expected.records == actual.targets))
+    Ok(assert!(expected.targets == actual.targets))
 }

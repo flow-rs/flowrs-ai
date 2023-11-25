@@ -10,3 +10,4 @@ pub use self::nodes::pca;
 pub use self::nodes::dbscan;
 pub use self::nodes::minmaxscale;
 pub use self::nodes::convertndarray2datasetbase;
+pub use self::nodes::csvToArrayN;
