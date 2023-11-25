@@ -7,26 +7,31 @@ use linfa_kernel::{Kernel, KernelType, KernelMethod};
 use linfa_reduction::DiffusionMap;
 use serde::{Deserialize, Serialize};
 
-
+#[derive(Clone, Deserialize, Serialize)]
+pub struct DiffusionMapConfig {
+   pub embedding_size: usize,
+   pub steps: usize
+}
 // Definition eines Structs
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct DiffusionMapNode { // <--- Wenn man eine neue Node anlegt, einfach alles kopieren und hier den Namen ändern
+pub struct DiffusionMapNode {
     #[output]
     pub output: Output<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>>>,
 
     #[input]
-    pub input: Input<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>
+    pub input: Input<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>,
 
-    // Das bedeutet, unsere Node braucht als Input einen Array2<u8> und liefert als Output einen Array2<u8>
+    #[input]
+    pub config_input: Input<DiffusionMapConfig>
 }
 
-// Das ist einfach der Konstruktur
 impl DiffusionMapNode {
     // Hier will der Konstruktur als einzigen Parameter einen ChangeObserver
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
-            input: Input::new()
+            input: Input::new(),
+            config_input: Input::new()
         }
     }
 }
@@ -50,29 +55,33 @@ impl Node for DiffusionMapNode {
             // source
             // fn transform(&self, kernel: &'a Kernel<F>) -> DiffusionMap<F>
             // parameters: Kernel, embedding_size, steps
-            
-            // Generate sparse gaussian kernel with eps = 2 and 15 neighbors
-
             let kernel = Kernel::params()
                 .kind(KernelType::Sparse(3))
                 .method(KernelMethod::Gaussian(2.0))
                 .transform(node_data.records.view());
 
-            // Create embedding from kernel matrix using diffusion maps
-            let mapped_kernel = DiffusionMap::<f64>::params(2)
-                .steps(1)
+            // Generate sparse gaussian kernel with eps = 2 and 15 neighbors
+            if let Ok(config) = self.config_input.next() {
+                println!("JW-Debug CSVToArrayNNode has received config.");
+
+                // Create embedding from kernel matrix using diffusion maps
+                let mapped_kernel = DiffusionMap::<f64>::params(config.embedding_size)
+                .steps(config.steps)
                 .transform(&kernel)
                 .unwrap();
 
-            // Get embedding from the transformed kernel matrix
-            let embedding = mapped_kernel.embedding();
-            println!("Embedding:\n{:?}\n", embedding);
+                // Get embedding from the transformed kernel matrix
+                let embedding = mapped_kernel.embedding();
+                println!("Embedding:\n{:?}\n", embedding);
+    
+                let myoutput = DatasetBase::new(node_data.records, embedding.clone());
 
+                // Hier schicken wir node_data als output an die nächste node bzw. den output
+                self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
 
-            let myoutput = DatasetBase::new(node_data.records, embedding.clone());
-
-            // Hier schicken wir node_data als output an die nächste node bzw. den output
-            self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
+            } else {
+                //Err(UpdateError::Other(anyhow::Error::msg("No config received!")));
+            }   
         }
         Ok(())
     }
@@ -88,7 +97,10 @@ impl Node for DiffusionMapNode {
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let change_observer = ChangeObserver::new();
+    let test_config_input = DiffusionMapConfig{
+        embedding_size: 2,
+        steps: 1
+    };
     let test_input: Array2<f64> = array![[1.1, 2.5, 3.2, 4.6, 5.2, 6.7], 
                                          [7.8, 8.2, 9.5, 10.3, 11.0, 12.0], 
                                          [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
@@ -105,6 +117,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
     test_node.input.send(test_dataset)?;
+    test_node.config_input.send(test_config_input)?;
     test_node.on_update()?;
 
 

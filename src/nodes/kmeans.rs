@@ -17,7 +17,7 @@ pub struct KmeansConfig {
 
 // Definition eines Structs
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct KmeansNode { // <--- Wenn man eine neue Node anlegt, einfach alles kopieren und hier den Namen ändern
+pub struct KmeansNode {
     #[input]
     pub config_input: Input<KmeansConfig>,
 
@@ -26,11 +26,8 @@ pub struct KmeansNode { // <--- Wenn man eine neue Node anlegt, einfach alles ko
 
     #[input]
     pub input: Input<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>>>, 
-
-    // Das bedeutet, unsere Node braucht als Input einen Array2<u8> und liefert als Output einen Array2<u8>
 }
 
-// Das ist einfach der Konstruktur
 impl KmeansNode {
     // Hier will der Konstruktur als einzigen Parameter einen ChangeObserver
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
@@ -42,7 +39,7 @@ impl KmeansNode {
     }
 }
 
-// Hier befinden sich die Methoden von unserer Node. Wir verwenden erstmal nur die Methoden, welche wir implementieren müssen, da diese von "Node" vorgegeben werden.
+// Hier befinden sich die Methoden von unserer Node.
 impl Node for KmeansNode {
     // on_update wird von der Pipeline automatisch getriggert, wenn diese Node einen Input bekommt.
     fn on_update(&mut self) -> Result<(), UpdateError> {
