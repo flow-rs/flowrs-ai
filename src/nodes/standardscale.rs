@@ -2,7 +2,7 @@ use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Outp
 use flowrs::RuntimeConnectable;
 
 use linfa::prelude::*;
-use ndarray::prelude::*;
+use ndarray::{prelude::*, OwnedRepr};
 use linfa::traits::{Fit, Transformer};
 use linfa_preprocessing::linear_scaling::LinearScaler;
 use serde::{Deserialize, Serialize};
@@ -12,12 +12,10 @@ use serde::{Deserialize, Serialize};
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct StandardscaleNode { // <--- Wenn man eine neue Node anlegt, einfach alles kopieren und hier den Namen ändern
     #[output]
-    pub output: Output<Array2<f64>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
+    pub output: Output<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
 
     #[input]
-    pub input: Input<Array2<f64>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
-
-    // Das bedeutet, unsere Node braucht als Input einen Array2<u8> und liefert als Output einen Array2<u8>
+    pub input: Input<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
 }
 
 // Das ist einfach der Konstruktur
@@ -38,37 +36,13 @@ impl Node for StandardscaleNode {
 
         // Hier überprüfen wir nur, ob ein input da ist und der passt
         if let Ok(node_data) = self.input.next() {
-            println!("JW-Debug: StandardscaleNode has received: {}.", node_data);
+            println!("JW-Debug: StandardscaleNode has received: {}.", node_data.records);
 
-            // #############################################################################
-            // #############################################################################
-            // Here begins the linfa_lib code
-            // #############################################################################
-            // #############################################################################
-
-            // impl<F: Float, D: Data<Elem = F>, T: AsTargets> Fit<ArrayBase<D, Dim<[usize; 2]>>, T, PreprocessingError> for LinearScalerParams<F>
-            // fn fit(&self, x: &DatasetBase<ArrayBase<D, Ix2>, T>) -> Result<Self::Object>
-            // Fits the input dataset accordng to the scaler method. Will return an error if the dataset does not contain any samples or
-            // (in the case of MinMax scaling) if the specified range is not valid.
-
-            // impl<F: Float> Transformer<ArrayBase<OwnedRepr<F>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<F>, Dim<[usize; 2]>>> for LinearScaler<F>
-            // fn transform(&self, x: Array2<F>) -> Array2<F>
-            // Scales an array of size (nsamples, nfeatures) according to the scaler’s offsets and scales. 
-            // Panics if the shape of the input array is not compatible with the shape of the dataset used for fitting.
-
-            // Needs DatasetBase für fitting
-            let dataset: DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(node_data.clone());
             // Learn scaling parameters
-            let scaler = LinearScaler::standard().fit(&dataset).unwrap();
+            let scaler = LinearScaler::standard().fit(&node_data).unwrap();
             // scale dataset according to parameters
             let standard_scaled_data = scaler.transform(node_data);
             println!("Data:\n{:?}\n", standard_scaled_data);
-
-            // #############################################################################
-            // #############################################################################
-            // Here ends the linfa_libe code
-            // #############################################################################
-            // #############################################################################
 
             // Hier schicken wir node_data als output an die nächste node bzw. den output
             self.output.send(standard_scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
@@ -87,18 +61,36 @@ impl Node for StandardscaleNode {
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let test_input: Array2<f64> = array![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
+    let test_input: Array2<f64> = array![[1.1, 2.5, 3.2, 4.6, 5.2, 6.7], 
+                                         [7.8, 8.2, 9.5, 10.3, 11.0, 12.0], 
+                                         [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
+                                         [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
+                                         [10.0, 11.0, 12.0, 13.0, 14.0, 15.0],
+                                         [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], 
+                                         [7.0, 8.0, 9.0, 10.0, 11.0, 12.0], 
+                                         [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
+                                         [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
+                                         [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
+    let dataset = Dataset::from(test_input.clone());
 
-    let mut and: StandardscaleNode<> = StandardscaleNode::new(Some(&change_observer));
+    let mut test_node: StandardscaleNode<> = StandardscaleNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
-    flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.input.send(test_input)?;
-    and.on_update()?;
+    flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
+    test_node.input.send(dataset)?;
+    test_node.on_update()?;
 
-    let expected: Array2<f64> = array![[-1.224744871391589, -1.224744871391589],
-                                        [0.0, 0.0],
-                                        [1.224744871391589, 1.224744871391589]];
-    let actual: Array2<f64> = mock_output.next()?;
+    let expected_data: Array2<f64> = array![[-1.4143377359247322, -1.3343815168527249, -1.3919452566240385, -0.5892455532801077, -0.6668399873113844, -0.5645401987746118],
+    [0.16764270325652061, 0.031143554253294955, 0.1019653254426467, 0.7596298096502591, 0.7046748802084846, 0.6979336634639715],
+    [1.3954484172479409, 1.4206252055541575, 1.406172976453245, -1.4411668351308655, -1.4235378452533811, -1.4458898761864531],
+    [-0.7295999338910557, -0.7354670119816634, -0.727984997927734, -0.021298032046269122, -0.004729361612137379, -0.01667418308617004],
+    [0.6870989668682753, 0.7019277997088839, 0.6947869849929187, 1.3985707710383273, 1.4140791220291065, 1.412541510014113],
+    [-1.4379493842707212, -1.454164417826937, -1.4393709893880604, -0.7312324335885673, -0.7141336034327592, -0.7312820296363116],
+    [-0.021250483511390143, -0.016769606136389788, -0.01659900646740768, 0.688636369496029, 0.7046748802084846, 0.6979336634639715],
+    [1.3954484172479409, 1.4206252055541575, 1.406172976453245, -1.4411668351308655, -1.4235378452533811, -1.4458898761864531],
+    [-0.7295999338910557, -0.7354670119816634, -0.727984997927734, -0.021298032046269122, -0.004729361612137379, -0.01667418308617004],
+    [0.6870989668682753, 0.7019277997088839, 0.6947869849929187, 1.3985707710383273, 1.4140791220291065, 1.412541510014113]];
+    let actual: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = mock_output.next()?;
+    let expected: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(expected_data.clone(), expected_data.clone());
 
-    Ok(assert!(expected == actual))
+    Ok(assert!(expected.records == actual.records))
 }

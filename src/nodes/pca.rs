@@ -34,9 +34,6 @@ impl Node for PCANode {
         if let Ok(data) = self.input.next() {
             println!("JW-Debug PCANode has received: {}.", data.records);
 
-            // transform to DatasetBase
-            //let dataset = DatasetBase::from(data);
-
             // parameter
             let embedding_size = 2;
             // pca
@@ -51,17 +48,6 @@ impl Node for PCANode {
             println!("Records:\n {}\n", dataset.records.clone());
             println!("Targets:\n {:?}\n", dataset.targets.clone());
             println!("Feature names:\n {:?}\n", dataset.feature_names().clone());
-
-            //output.records = dataset.records.clone();
-            
-            //output.targets = mydata.clone();
-            //output.records = dataset.record.clone();
-
-
-            //output.records = reduced_dataset.records;
-            //output.targets = reduced_dataset.targets;
-            //let reduced_dataset: Output<DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<()>, Dim<[usize; 1]>>>> = embedding.predict(data);
-            
 
             self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
         }

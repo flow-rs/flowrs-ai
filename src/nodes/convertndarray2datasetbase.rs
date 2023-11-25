@@ -63,20 +63,16 @@ impl Node for ConvertNdarray2DatasetBase {
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
     let test_input: Array2<f64> = array![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
-    //let data: Vec<f64> = vec![1.0,2.0, 3.0, 4.0, 5.0, 6.0]; 
-    let data = vec![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
 
-    let mut and: ConvertNdarray2DatasetBase<> = ConvertNdarray2DatasetBase::new(Some(&change_observer));
+    let mut test_node: ConvertNdarray2DatasetBase<> = ConvertNdarray2DatasetBase::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
-    flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.input.send(test_input.clone())?;
-    and.on_update()?;
+    flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
+    test_node.input.send(test_input.clone())?;
+    test_node.on_update()?;
 
-   /* let expected = array![1, 0, 0];
-    let actual: DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<()>, Dim<[usize; 1]>>> = mock_output.next()?;
-    let targets = actual.targets.clone();
-    let expectedData = ArrayBase::<OwnedRepr<f64>, Dim<[usize; 2]>>::from_shape_vec((2,3), data).unwrap();
-    let converted_data = actual.targets.clone().mapv(|_| 0.0); */
+    let actual: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = mock_output.next()?;
+
+
 
     Ok(assert!(true))
 }

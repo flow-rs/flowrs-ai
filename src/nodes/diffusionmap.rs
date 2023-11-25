@@ -1,8 +1,8 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::prelude::*;
-use linfa::traits::Transformer;
+use ndarray::{prelude::*, OwnedRepr};
+use linfa::{traits::Transformer, DatasetBase, Dataset};
 use linfa_kernel::{Kernel, KernelType, KernelMethod};
 use linfa_reduction::DiffusionMap;
 use serde::{Deserialize, Serialize};
@@ -12,10 +12,10 @@ use serde::{Deserialize, Serialize};
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct DiffusionMapNode { // <--- Wenn man eine neue Node anlegt, einfach alles kopieren und hier den Namen ändern
     #[output]
-    pub output: Output<Array2<f64>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
+    pub output: Output<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>>>,
 
     #[input]
-    pub input: Input<Array2<f64>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
+    pub input: Input<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>
 
     // Das bedeutet, unsere Node braucht als Input einen Array2<u8> und liefert als Output einen Array2<u8>
 }
@@ -38,7 +38,7 @@ impl Node for DiffusionMapNode {
 
         // Hier überprüfen wir nur, ob ein input da ist und der passt
         if let Ok(node_data) = self.input.next() {
-            println!("JW-Debug: DiffusionMapNode has received: {}.", node_data);
+            println!("JW-Debug DiffusionMapNode has received: {}.", node_data.records);
 
             // #############################################################################
             // #############################################################################
@@ -56,7 +56,7 @@ impl Node for DiffusionMapNode {
             let kernel = Kernel::params()
                 .kind(KernelType::Sparse(3))
                 .method(KernelMethod::Gaussian(2.0))
-                .transform(node_data.view());
+                .transform(node_data.records.view());
 
             // Create embedding from kernel matrix using diffusion maps
             let mapped_kernel = DiffusionMap::<f64>::params(2)
@@ -68,14 +68,11 @@ impl Node for DiffusionMapNode {
             let embedding = mapped_kernel.embedding();
             println!("Embedding:\n{:?}\n", embedding);
 
-            // #############################################################################
-            // #############################################################################
-            // Here ends the linfa_libe code
-            // #############################################################################
-            // #############################################################################
+
+            let myoutput = DatasetBase::new(node_data.records, embedding.clone());
 
             // Hier schicken wir node_data als output an die nächste node bzw. den output
-            self.output.send(embedding.clone()).map_err(|e| UpdateError::Other(e.into()))?;
+            self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }
@@ -91,19 +88,39 @@ impl Node for DiffusionMapNode {
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let test_input: Array2<f64> = array![[1.0, 2.0, 3.0, 4.0], [3.0, 4.0, 5.0, 6.0], [5.0, 6.0, 7.0, 8.0], [7.0, 4.0, 1.0, 9.0]];
+    let change_observer = ChangeObserver::new();
+    let test_input: Array2<f64> = array![[1.1, 2.5, 3.2, 4.6, 5.2, 6.7], 
+                                         [7.8, 8.2, 9.5, 10.3, 11.0, 12.0], 
+                                         [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
+                                         [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
+                                         [10.0, 11.0, 12.0, 13.0, 14.0, 15.0],
+                                         [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], 
+                                         [7.0, 8.0, 9.0, 10.0, 11.0, 12.0], 
+                                         [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
+                                         [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
+                                         [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
+    let test_dataset = Dataset::from(test_input.clone());
 
-    let mut and: DiffusionMapNode<> = DiffusionMapNode::new(Some(&change_observer));
+    let mut test_node: DiffusionMapNode<> = DiffusionMapNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
-    flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.input.send(test_input)?;
-    and.on_update()?;
+    flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
+    test_node.input.send(test_dataset)?;
+    test_node.on_update()?;
 
-    let expected: Array2<f64> = array![[-0.6277633197008474, 0.7062768225572112],
-                                        [-0.45945581589841195, -3.562607586318781e-7],
-                                        [-0.6273416245953961, -0.7067513162800128],
-                                        [1.5990652143251083e-6, 1.7822446319792776e-7]];
-    let actual: Array2<f64> = mock_output.next()?;
+
+    let expected_data: Array2<f64> = array![[2.1218594193914674e-15, 5.3720002361451115e-17],
+    [0.34922335766038987, -2.383630731487172e-13],
+    [-4.964803802882625e-14, 0.24999992391726172],
+    [1.9660992574078857e-12, -2.9521920719939894e-8],
+    [2.4591022380216627e-10, 0.0001950420188612224],
+    [1.8910998157060896e-15, 1.4485925063480052e-16],
+    [0.3492233578927868, -3.076657427221702e-14],
+    [-3.3125455168563386e-14, 0.24999992391720385],
+    [1.942479529165688e-12, -2.952213544990568e-8],
+    [2.4594727976304506e-10, 0.00019504201876301383]];
+    let expected: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(test_input.clone(), expected_data.clone());
+
+    let actual = mock_output.next()?;
 
     Ok(assert!(expected == actual))
 }

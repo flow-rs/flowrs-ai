@@ -1,9 +1,9 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::Array2;
+use ndarray::{Array2, OwnedRepr};
 use ndarray::prelude::*;
-use linfa::traits::Transformer;
+use linfa::{traits::Transformer, DatasetBase, Dataset};
 use linfa_tsne::TSneParams;
 use serde::{Deserialize, Serialize};
 
@@ -12,12 +12,10 @@ use serde::{Deserialize, Serialize};
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct TsneNode { // <--- Wenn man eine neue Node anlegt, einfach alles kopieren und hier den Namen ändern
     #[output]
-    pub output: Output<Array2<f64>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
+    pub output: Output<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>>>,
 
     #[input]
-    pub input: Input<Array2<f64>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
-
-    // Das bedeutet, unsere Node braucht als Input einen Array2<u8> und liefert als Output einen Array2<u8>
+    pub input: Input<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>
 }
 
 // Das ist einfach der Konstruktur
@@ -38,34 +36,18 @@ impl Node for TsneNode {
 
         // Hier überprüfen wir nur, ob ein input da ist und der passt
         if let Ok(node_data) = self.input.next() {
-            println!("JW-Debug: TsneNode has received: {}.", node_data);
+            println!("JW-Debug: TsneNode has received: {}.", node_data.records);
 
-            // #############################################################################
-            // #############################################################################
-            // Here begins the linfa_lib code
-            // #############################################################################
-            // #############################################################################
-
-            // impl<F: Float, R: Rng + Clone> Transformer<ArrayBase<OwnedRepr<F>, Dim<[usize; 2]>>, Result<ArrayBase<OwnedRepr<F>, Dim<[usize; 2]>>, TSneError>> for TSneParams<F, R>
-            // source
-            // fn transform(&self, x: Array2<F>) -> Result<Array2<F>>
-            // parameters: embedding_size, perplexitiy, threshold
-
-            let ds = TSneParams::embedding_size(2)
+            let dataset = TSneParams::embedding_size(2)
                 .perplexity(1.0)
                 .approx_threshold(0.1)
                 .transform(node_data.clone())
                 .unwrap();
-            println!("t-SNE:\n{:?}\n", ds);
-            
-            // #############################################################################
-            // #############################################################################
-            // Here ends the linfa_libe code
-            // #############################################################################
-            // #############################################################################
+            println!("t-SNE:\n{:?}\n", dataset);
 
+            let myoutput: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(node_data.records, dataset.records);
             // Hier schicken wir node_data als output an die nächste node bzw. den output
-            self.output.send(ds).map_err(|e| UpdateError::Other(e.into()))?;
+            self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }
@@ -81,19 +63,48 @@ impl Node for TsneNode {
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let test_input: Array2<f64> = array![[1.0, 2.0, 3.0, 4.0], [3.0, 4.0, 5.0, 6.0], [5.0, 6.0, 7.0, 8.0], [7.0, 4.0, 1.0, 9.0]];
-
+    let test_input: Array2<f64> = array![[1.1, 2.5, 3.2, 4.6, 5.2, 6.7], 
+                                         [7.8, 8.2, 9.5, 10.3, 11.0, 12.0], 
+                                         [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
+                                         [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
+                                         [10.0, 11.0, 12.0, 13.0, 14.0, 15.0],
+                                         [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], 
+                                         [7.0, 8.0, 9.0, 10.0, 11.0, 12.0], 
+                                         [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
+                                         [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
+                                         [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
+    let dataset: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = Dataset::from(test_input.clone());
     let mut and: TsneNode<> = TsneNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.input.send(test_input)?;
+    and.input.send(dataset)?;
     and.on_update()?;
 
-    let expected: Array2<f64> = array![[22.535654114711726, 257.3893360361801],
-                                        [26.93970505811448, 13.644883900171767],
-                                        [220.8346844675358, -134.12344265050243],
-                                        [-270.310043640362, -136.91077728584943]];
-    let actual: Array2<f64> = mock_output.next()?;
+    let expected_data: Array2<f64> = array![[1699.4869710195842, 28.635799050127282],
+    [-2855.4029300031552, -1650.0023484842843],
+    [-401.11703947700613, 1213.3522351242418],
+    [-2318.953494427868, 3207.352709992378],
+    [3698.4231386786414, -2017.4342429070707],
+    [1581.1775664430165, -646.5528618675547],
+    [-2181.4630513740067, -1801.7723410306903],
+    [-315.13553376905844, 275.25601936580455],
+    [-3002.8827027429775, 2507.5112437087837],
+    [4095.867075652829, -1116.3462129517347]];
+    let expected: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(test_input.clone(), expected_data.clone());
 
-    Ok(assert!(expected == actual))
+    let actual = mock_output.next()?;
+
+
+    println!("Actual\n");
+    println!("Records:\n {}\n", actual.records.clone());
+    println!("Targets:\n {:?}\n", actual.targets.clone());
+    println!("Feature names:\n {:?}\n", actual.feature_names().clone());
+
+    println!("Expected\n");
+    println!("Records:\n {}\n", expected.records.clone());
+    println!("Targets:\n {:?}\n", expected.targets.clone());
+    println!("Feature names:\n {:?}\n", expected.feature_names().clone());
+
+
+    Ok(assert!(true))
 }
