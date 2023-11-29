@@ -10,20 +10,29 @@ use linfa::traits::{Fit, Predict};
 use serde::{Deserialize, Serialize};
 
 
+#[derive(Clone, Deserialize, Serialize)]
+pub struct PCAConfig {
+   pub embedding_size: usize
+}
+
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct PCANode {
+    #[input]
+    pub config_input: Input<PCAConfig>,
+
     #[output]
     pub output: Output<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>>>,
 
     #[input]
-    pub input: Input<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>
+    pub dataset_input: Input<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>
 }
 
 impl PCANode {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
-            output: Output::new(change_observer),
-            input: Input::new()
+            config_input: Input::new(),
+            dataset_input: Input::new(),
+            output: Output::new(change_observer)
         }
     }
 }
@@ -31,25 +40,29 @@ impl PCANode {
 impl Node for PCANode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
-        if let Ok(data) = self.input.next() {
-            println!("JW-Debug PCANode has received: {}.", data.records);
-
-            // parameter
-            let embedding_size = 2;
-            // pca
-            let embedding = Pca::params(embedding_size)
-                .fit(&data)
-                .unwrap();
-            let dataset = embedding.predict(data);
+        if let Ok(dataset) = self.dataset_input.next() {
+            println!("JW-Debug PCANode has received: {}.", dataset.records);
             
-            let myoutput: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(dataset.records.clone(), dataset.targets.clone());
+            if let Ok(config) = self.config_input.next() {
+                println!("JW-Debug PCANode has received config.");
+            
+                // parameter
+                let embedding_size = 2;
+                // pca
+                let embedding = Pca::params(embedding_size)
+                    .fit(&dataset)
+                    .unwrap();
+                let red_dataset = embedding.predict(dataset);
+                
+                let myoutput: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(red_dataset.records.clone(), red_dataset.targets.clone());
 
-            println!("DatasetBase\n");
-            println!("Records:\n {}\n", dataset.records.clone());
-            println!("Targets:\n {:?}\n", dataset.targets.clone());
-            println!("Feature names:\n {:?}\n", dataset.feature_names().clone());
+                println!("DatasetBase\n");
+                println!("Records:\n {}\n", red_dataset.records.clone());
+                println!("Targets:\n {:?}\n", red_dataset.targets.clone());
+                println!("Feature names:\n {:?}\n", red_dataset.feature_names().clone());
 
-            self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
+                self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
+            }
         }
         Ok(())
     }
@@ -69,10 +82,14 @@ fn input_output_test() -> Result<(), UpdateError> {
                                          [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
     let dataset = Dataset::from(test_input.clone());
+    let test_config_input = PCAConfig{
+        embedding_size: 2,
+    };
     let mut and: PCANode<> = PCANode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.input.send(dataset)?;
+    and.dataset_input.send(dataset)?;
+    and.config_input.send(test_config_input);
     and.on_update()?;
 
     let expected_data: Array2<f64> = array![[-3.076047733203457, -10.562293260063301],
