@@ -2,7 +2,6 @@ mod nodes;
 
 pub use self::nodes::kmeans;
 pub use self::nodes::csv2arrayn;
-pub use self::nodes::dimred;
 pub use self::nodes::diffusionmap;
 pub use self::nodes::maxabsscale;
 pub use self::nodes::standardscale;

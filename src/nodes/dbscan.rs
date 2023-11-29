@@ -1,8 +1,10 @@
+use std::mem::swap;
+
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
 use ndarray::{Array2, Array1};
-use linfa::dataset::DatasetBase;
+use linfa::dataset::{DatasetBase, self};
 use linfa::traits::Transformer;
 use ndarray::{ArrayBase, OwnedRepr, Dim, array};
 use linfa_clustering::Dbscan;
@@ -15,7 +17,7 @@ pub struct DbscanConfig {
     pub tolerance: f64
 }
 
-#[derive(RuntimeConnectable, Deserialize, Serialize)]
+#[derive(RuntimeConnectable)]
 pub struct DbscanNode {
     #[input]
     pub config_input: Input<DbscanConfig>,
@@ -25,6 +27,8 @@ pub struct DbscanNode {
 
     #[input]
     pub dataset_input: Input<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>>>, 
+
+    input_dataset: Option<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>>>,
 }
 
 impl DbscanNode {
@@ -32,26 +36,31 @@ impl DbscanNode {
         Self {
             config_input: Input::new(),
             dataset_input: Input::new(),
-            output: Output::new(change_observer)
+            output: Output::new(change_observer),
+            input_dataset : Option::None
         }
     }
 }
 
 impl Node for DbscanNode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-
+        println!("JW-Debug: DbscanNode");
         if let Ok(dataset) = self.dataset_input.next() {
             println!("JW-Debug: DbscanNode has received: \n Records: {} \n Targets: {}.", dataset.records, dataset.targets);
+            self.input_dataset = Some(dataset);
+        }
+
+        if let Some(data) = self.input_dataset.clone() {
 
             if let Ok(config) = self.config_input.next() {
-                println!("JW-Debug DbscanNode has received config.");
-
+                println!("JW-Debug DbscanNode has received config: {}, {}", config.min_points, config.tolerance);
+                
                 // dbscan
                 let clusters = Dbscan::params(config.min_points)
-                    .tolerance(config.tolerance)
-                    .transform(dataset)
-                    .unwrap();
-                
+                .tolerance(config.tolerance)
+                .transform(data)
+                .unwrap();
+            
                 // debug
                 println!("Clusters:");
                 let label_count = clusters.label_count().remove(0);
@@ -65,6 +74,7 @@ impl Node for DbscanNode {
                 self.output.send(clusters).map_err(|e| UpdateError::Other(e.into()))?;
             }
         }
+
         Ok(())
     }
 }
@@ -97,7 +107,6 @@ fn input_output_test() -> Result<(), UpdateError> {
     let test_config_input = DbscanConfig{
         min_points: 2,
         tolerance: 0.5
-
     };
 
     let mut and: DbscanNode<> = DbscanNode::new(Some(&change_observer));

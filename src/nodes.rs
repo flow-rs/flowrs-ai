@@ -1,5 +1,4 @@
 pub mod kmeans;
-pub mod dimred;
 pub mod maxabsscale;
 pub mod csv2arrayn;
 pub mod tsne;
