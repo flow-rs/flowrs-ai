@@ -5,4 +5,5 @@ pub mod nodes;
 
 pub use self::nodes::clustering;
 pub use self::nodes::model;
+pub use self::nodes::preproccessing;
 

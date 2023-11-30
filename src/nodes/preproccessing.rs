@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 use ndarray::{ 
     Dim,
     OwnedRepr,
-    ArrayBase
+    ArrayBase,
+    Array4,
+    Array
 };
 
 use image::{GenericImageView, imageops::FilterType};
@@ -44,26 +46,27 @@ impl Node for PreProccessingNode
     fn on_update(&mut self) -> Result<(), UpdateError> {
         let output = preproccessing_input();
         if let Ok(output) = output{
-            
         }
         Ok(())
     }
 }
 
-fn preproccessing_input() -> Result<ArrayBase<OwnedRepr<()>, Dim<[usize; 4]>>, UpdateError>{
+fn preproccessing_input() -> Result<ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>, UpdateError>{
     let input_path = "C:/Users/Marcel/LRZ Sync+Share/Master/3_Semester/Hauptseminar_2/flow-rs/flowrs-ai/src/example_pic/crosswalk.jpg";
     let img = image::open(input_path).expect("Failed to open image"); // img = input
 
-    let squeezenet_width = 224;
-    let squeezenet_height = 224;
+    let constant: i32 = 1;
+    let rgb: i32 = 3;
+    let squeezenet_width: u32 = 224;
+    let squeezenet_height: u32 = 224;
 
     let resized_image = img.resize_exact(squeezenet_width, squeezenet_height, FilterType::CatmullRom);
 
-    let mut input_tensor = ndarray::Array::from_shape_fn((1, 3, 224, 224), |(_, c, j, i)| {
-        let _pixel = resized_image.get_pixel(i as u32, j as u32);
-    });
-    println!("{}", squeezenet_height);
-    /* 
+    let dim = Dim((1,3,224, 224));
+
+    let mut input_tensor: Array4<f32> = Array::zeros(dim);
+
+     
     for pixel in resized_image.pixels() {
         let x = pixel.0 as usize;
         let y = pixel.1 as usize;
@@ -71,9 +74,9 @@ fn preproccessing_input() -> Result<ArrayBase<OwnedRepr<()>, Dim<[usize; 4]>>, U
         input_tensor[[0, 0, y, x]] = (r as f32) / 255.0;
         input_tensor[[0, 1, y, x]] = (g as f32) / 255.0;
         input_tensor[[0, 2, y, x]] = (b as f32) / 255.0;
-    };*/
-
-    //println!("input_tensor: {:?}", input_tensor);
+    };
+    println!("{:?}", input_tensor);
+    
     Ok(input_tensor)
 }
 

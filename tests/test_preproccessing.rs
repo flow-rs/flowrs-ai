@@ -9,7 +9,7 @@ mod nodes {
         let mut model_node = PreProccessingNode::new(Some(&change_observer));
 
         let result = model_node.on_update();
-
+        
         Ok(assert!(result.is_ok()))
     }
     
