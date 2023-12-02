@@ -33,5 +33,20 @@ wonnx = "0.5.1"
 pollster = "0.3.0"
 wasm-bindgen-futures = "0.4.38"
 futures-executor = "0.3"
+log = "0.4.20"
+js-sys = "0.3.65"
+base64 = "0.21.5"
+
+[dependencies.web-sys]
+version = "0.3.64"
+features = [
+  'Headers',
+  'Request',
+  'RequestInit',
+  'RequestMode',
+  'Response',
+  'Window',
+]
+
 #[dev-dependencies]
 #wasm-bindgen-test = "0.3.37"

@@ -1,5 +1,10 @@
-use std::collections::hash_map::RandomState;
-use std::{env, fmt::Debug, collections::HashMap};
+use std::borrow::Borrow;
+use std::cell::RefCell;
+use std::path::Path;
+use std::rc::Rc;
+use std::sync::{Arc, Mutex};
+use std::{fmt::Debug, collections::HashMap};
+use base64::{Engine as _, engine::general_purpose};
 use ndarray::{ArrayD, Array};
 use flowrs::RuntimeConnectable;
 use flowrs::{
@@ -9,18 +14,22 @@ use flowrs::{
 use serde::{Deserialize, Serialize};
 
 use futures_executor::block_on;
+use wonnx::utils::InputTensor;
 use wonnx::{
-    Session,
     utils::OutputTensor,
-    WonnxError
+    WonnxError,
+    Session
 };
+
+use wasm_bindgen_futures::spawn_local;
 
 #[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct ModelConfig {
-   pub model_path: String
+   pub model_path: String,
+   pub model_base64: String,
 }
 
-#[derive(RuntimeConnectable, Deserialize, Serialize)]
+#[derive(RuntimeConnectable)]
 pub struct ModelNode
 {
     #[input]
@@ -30,7 +39,9 @@ pub struct ModelNode
     #[output]
     pub output: Output<ArrayD<f32>>,
     pub model_config: Option<ModelConfig>,
+    pub session: RefCell<Option<Session>>,
 }
+
 
 impl ModelNode
 {
@@ -40,8 +51,38 @@ impl ModelNode
             model_input: Input::new(),
             output: Output::new(change_observer),
             model_config: None,
+            session: RefCell::new(None),
         }
     }
+    #[cfg(not(target_arch = "wasm32"))]
+    fn load_session(&mut self) {
+        let model_file_path = Path::new(env!("CARGO_MANIFEST_DIR")).join(self.model_config.clone().unwrap().model_path);
+        let loaded_session = Some(block_on(Session::from_path(model_file_path)).unwrap());
+        let mut sesson_ref = self.session.borrow_mut();
+        *sesson_ref = loaded_session;
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn execute_model(&mut self, model_input: ArrayD<f32>) -> Result<HashMap<String, OutputTensor>, WonnxError> {
+        let mut input_data: HashMap<String, InputTensor> = HashMap::new();
+        input_data.insert("data".to_string(), model_input.as_slice().unwrap().into());
+        let binding = self.session.borrow();
+        let session_ref = binding.as_ref().unwrap();
+        let res = block_on(session_ref.run(&input_data)).unwrap();
+        Ok(res)
+    }
+
+    /* 
+    #[cfg(target_arch = "wasm32")]
+    fn load_session(&mut self) {
+        let bytes = general_purpose::STANDARD_NO_PAD.decode(self.model_config.clone().unwrap().model_path).unwrap();
+        let mut new_session: Option<Session> = None;
+        spawn_local(async move {
+            new_session = Session::from_bytes(&bytes).await.ok();
+        });
+        self.session = RefCell::new(new_session);
+    }
+    */
 }
 
 impl Node for ModelNode
@@ -49,10 +90,11 @@ impl Node for ModelNode
     fn on_update(&mut self) -> Result<(), UpdateError> {
         if let Ok(input_model_config) = self.input_model_config.next() {
             self.model_config = Some(input_model_config);
+            self.load_session();
         }
         if let Ok(model_input) = self.model_input.next() {
-            let config = self.model_config.clone().unwrap();
-            let res: Result<HashMap<String, OutputTensor>, WonnxError> = block_on(run(config, model_input));
+            let res = self.execute_model(model_input);
+            
             if let Ok(out) = res {
                 for (_, output_tensor) in out {
                     let result = Vec::try_from(output_tensor).unwrap();
@@ -62,18 +104,4 @@ impl Node for ModelNode
         }
         Ok(())
     }
-    
 }
-
-async fn run(model_config: ModelConfig, model_input: ArrayD<f32>) -> Result<HashMap<String, OutputTensor>, WonnxError> {
-    let mut input_data = HashMap::new();
-    input_data.insert("data".to_string(), model_input.as_slice().unwrap().into());
-
-    let model_file_path = env::current_dir()
-        .expect("Failed to obtain current directory")
-        .join(model_config.model_path);
-    let session = Session::from_path(model_file_path).await?;
-    let result = session.run(&input_data).await?;
-    Ok(result)
-}
-
