@@ -3,7 +3,7 @@ use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Outp
 use flowrs::RuntimeConnectable;
 
 use linfa::DatasetBase;
-use ndarray::{array, ArrayBase, OwnedRepr, Dim};
+use ndarray::{array, Array1, ArrayBase, OwnedRepr, Dim};
 use ndarray::Array2;
 use csv::ReaderBuilder;
 use ndarray_csv::Array2Reader;
@@ -28,7 +28,7 @@ where
     pub data_input: Input<String>,
 
     #[output]
-    pub output: Output<DatasetBase<Array2<T>, ()>>,
+    pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
     data_object: Option<String>
 }
@@ -68,7 +68,7 @@ where
                                                             .has_headers(config.has_feature_names)
                                                             .from_reader(data.as_bytes());
                 let data_ndarray: Array2<T> = reader.deserialize_array2_dynamic().map_err(|e| UpdateError::Other(e.into()))?;
-                let dataset: DatasetBase<ArrayBase<OwnedRepr<T>, Dim<[usize; 2]>>, ()> = DatasetBase::new(data_ndarray, ());
+                let dataset = DatasetBase::from(data_ndarray);
 
                 // get feature names
                 if config.has_feature_names {

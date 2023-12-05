@@ -15,6 +15,7 @@ mod nodes {
     };
 
     use flowrs_ai::{csv2arrayn::{CSVToArrayNNode, self},
+                    csvToArrayN::{CSVToDatasetBaseNode, CSVToDatasetBaseConfig, self},
                     dbscan::DbscanNode,
                     diffusionmap::{DiffusionMapNode, self},
                     dimred::{DimRedNode, self},
@@ -134,6 +135,77 @@ mod nodes {
     }
 
     #[test]
+    fn my_test() {
+        let change_observer: ChangeObserver = ChangeObserver::new();
+
+        // DataInputNode
+        let data_input_node = ValueNode::new(
+            String::from("Feature1,Feature2,Freature3,Feature4\n1.0,2.0,3.0,4.0\n3.0,4.0,5.0,6.0\n5.0,6.0,7.0,8.0\n7.0,4.0,1.0,9.0"),
+            Some(&change_observer),
+        );
+
+        // CsvToDatasetBaseConfigNode
+        let csv_config_node = ValueNode::new(
+            CSVToDatasetBaseConfig{
+                separator: b',',
+                has_feature_names: true
+            },
+            Some(&change_observer),
+        );
+
+        let csv2datasetbase_node: CSVToDatasetBaseNode<f64> = CSVToDatasetBaseNode::new(Some(&change_observer));
+
+        let maxabsscaler_node: MaxAbsScleNode<> = MaxAbsScleNode::new(Some(&change_observer));
+
+        // let diffusionmap_node: DiffusionMapNode<> = DiffusionMapNode::new(Some(&change_observer));
+        // let dbscan_node: DbscanNode<> = DbscanNode::new(Some(&change_observer));
+
+        let debug_node = DebugNode::<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>::new(Some(&change_observer));
+
+        // Connections
+        connect(data_input_node.output.clone(), csv2datasetbase_node.data_input.clone());
+        connect(csv_config_node.output.clone(), csv2datasetbase_node.config_input.clone());
+
+        connect(csv2datasetbase_node.output.clone(), maxabsscaler_node.input.clone());
+
+        connect(maxabsscaler_node.output.clone(), debug_node.input.clone());
+
+        // Flow
+        let mut flow: Flow = Flow::new_empty();
+        flow.add_node(data_input_node);
+        flow.add_node(csv_config_node);
+        flow.add_node(csv2datasetbase_node);
+        flow.add_node(maxabsscaler_node);
+        // flow.add_node(diffusionmap_node);
+        // flow.add_node(dbscan_node);
+        flow.add_node(debug_node);
+
+
+        // Controller
+        let (controller_sender, controller_receiver) = channel();
+        let thread_handle = thread::spawn(move || {
+            let mut executor = StandardExecutor::new(change_observer);
+
+            controller_sender
+                .send(executor.controller())
+                .expect("Controller sender cannot send.");
+
+            controller_receiver
+                .recv()
+                .expect("JW failed.");
+
+            executor
+                .run(flow, RoundRobinScheduler::new(), MultiThreadedNodeUpdater::new(4))
+                .expect("Run failed.");
+        });
+        
+        thread::sleep(Duration::from_secs(4));
+
+        assert!(true);
+
+    }
+
+    #[test]
     fn csv_array_dataset_standard_diffmap_dbscan() {
         let change_observer: ChangeObserver = ChangeObserver::new();
 
@@ -157,7 +229,7 @@ mod nodes {
         connect(csv2arrayn_node.output.clone(), convertndarray2datasetbase.input.clone());
         connect(convertndarray2datasetbase.output.clone(), standardscale_node.input.clone());
         connect(standardscale_node.output.clone(), diffusionmap_node.input.clone());
-        connect(diffusionmap_node.output.clone(), dbscan_node.input.clone());
+        connect(diffusionmap_node.output.clone(), dbscan_node.dataset_input.clone());
         connect(dbscan_node.output.clone(), debug_node.input.clone());
 
         // Flow
@@ -218,7 +290,7 @@ mod nodes {
         connect(value_node.output.clone(), csv2arrayn_node.input.clone());
         connect(csv2arrayn_node.output.clone(), convertndarray2datasetbase.input.clone());
         connect(convertndarray2datasetbase.output.clone(), l1_node.input.clone());
-        connect(l1_node.output.clone(), pca_node.input.clone());
+        connect(l1_node.output.clone(), pca_node.dataset_input.clone());
         connect(pca_node.output.clone(), kmeans_node.input.clone());
         connect(kmeans_node.output.clone(), debug_node.input.clone());
 
