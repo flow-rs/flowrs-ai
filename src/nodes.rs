@@ -13,3 +13,4 @@ pub mod l1normscaler;
 pub mod l2normscaler;
 pub mod maxnormscaler;
 pub mod minmaxsrangescaler;
+pub mod csvToDsBWithStringEncoder;

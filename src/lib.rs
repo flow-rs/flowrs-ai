@@ -14,3 +14,4 @@ pub use self::nodes::l1normscaler;
 pub use self::nodes::l2normscaler;
 pub use self::nodes::maxnormscaler;
 pub use self::nodes::minmaxsrangescaler;
+pub use self::nodes::csvToDsBWithStringEncoder;

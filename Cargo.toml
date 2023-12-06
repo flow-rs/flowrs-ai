@@ -39,6 +39,7 @@ wasm-bindgen = "0.2.87"
 linfa-nn = "0.7.0"
 linfa-kernel = "0.7.0"
 linfa-tsne = "0.7.0"
+statrs = "0.15"
 
 #[dev-dependencies]
 #wasm-bindgen-test = "0.3.37"

@@ -1,7 +1,7 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::{Array2, array, ArrayBase, Dim, OwnedRepr};
+use ndarray::{Array2, Array1, array, ArrayBase, Dim, OwnedRepr};
 use linfa::{dataset::DatasetBase, Dataset};
 use linfa::traits::{Fit, Transformer};
 use linfa_preprocessing::linear_scaling::LinearScaler;
@@ -11,10 +11,10 @@ use serde::{Deserialize, Serialize};
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct MaxAbsScleNode {
     #[output]
-    pub output: Output<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
+    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>, 
 
     #[input]
-    pub input: Input<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
+    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>,
 
 }
 
@@ -30,12 +30,12 @@ impl MaxAbsScleNode {
 impl Node for MaxAbsScleNode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
-        if let Ok(node_data) = self.input.next() {
-            println!("JW-Debug: MaxAbsScalerNode has received: {}.", node_data.records);
+        if let Ok(dataset) = self.input.next() {
+            println!("JW-Debug: MaxAbsScalerNode has received: {}.", dataset.records);
 
             // max abs scaling
-            let scaler = LinearScaler::max_abs().fit(&node_data).unwrap();
-            let dataset = scaler.transform(node_data);
+            let scaler = LinearScaler::max_abs().fit(&dataset).unwrap();
+            let dataset = scaler.transform(dataset);
 
             // debug
             println!("Scaled data: {}", dataset.records);
