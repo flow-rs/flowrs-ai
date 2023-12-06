@@ -41,7 +41,7 @@ impl Node for CSVToArrayNNode {
             let data_ndarray: Array2<f64> = reader.deserialize_array2_dynamic().map_err(|e| UpdateError::Other(e.into()))?;
             
             // debug
-            println!("Ndarray: {}", data_ndarray);
+            //println!("Ndarray: {}", data_ndarray);
 
             self.output.send(data_ndarray).map_err(|e| UpdateError::Other(e.into()))?;
         }

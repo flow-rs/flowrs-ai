@@ -8,7 +8,7 @@ use linfa_clustering::KMeans;
 use serde::{Deserialize, Serialize};
 
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone)]
 pub struct KmeansConfig {
    pub num_of_dim: usize,
    pub max_n_iterations: u64,
@@ -16,7 +16,7 @@ pub struct KmeansConfig {
 }
 
 // Definition eines Structs
-#[derive(RuntimeConnectable, Deserialize, Serialize)]
+#[derive(RuntimeConnectable)]
 pub struct KmeansNode {
     #[input]
     pub config_input: Input<KmeansConfig>,

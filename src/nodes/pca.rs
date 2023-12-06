@@ -10,12 +10,12 @@ use linfa::traits::{Fit, Predict};
 use serde::{Deserialize, Serialize};
 
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone)]
 pub struct PCAConfig {
    pub embedding_size: usize
 }
 
-#[derive(RuntimeConnectable, Deserialize, Serialize)]
+#[derive(RuntimeConnectable)]
 pub struct PCANode {
     #[input]
     pub config_input: Input<PCAConfig>,
