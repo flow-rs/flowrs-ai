@@ -44,10 +44,15 @@ impl DbscanNode {
 
 impl Node for DbscanNode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: DbscanNode");
+        println!("JW-Debug: DbscanNode got an update!");
+
         if let Ok(dataset) = self.dataset_input.next() {
             println!("JW-Debug: DbscanNode has received: \n Records: {} \n Targets: {}.", dataset.records, dataset.targets);
             self.input_dataset = Some(dataset);
+        }
+
+        if let Ok(config) = self.config_input.next() {
+            println!("JW-Debug DbscanNode has received config: {}, {}", config.min_points, config.tolerance);
         }
 
         if let Some(data) = self.input_dataset.clone() {
@@ -62,14 +67,14 @@ impl Node for DbscanNode {
                 .unwrap();
             
                 // debug
-                println!("Clusters:");
-                let label_count = clusters.label_count().remove(0);
+                //println!("Clusters:");
+                /*let label_count = clusters.label_count().remove(0);
                 for (label, count) in label_count {
                     match label {
                         None => println!(" - {} noise points", count),
                         Some(i) => println!(" - {} points in cluster {}", count, i),
                     }
-                }
+                }*/
 
                 self.output.send(clusters).map_err(|e| UpdateError::Other(e.into()))?;
             }

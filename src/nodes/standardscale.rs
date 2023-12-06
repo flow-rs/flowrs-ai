@@ -42,7 +42,7 @@ impl Node for StandardscaleNode {
             let scaler = LinearScaler::standard().fit(&node_data).unwrap();
             // scale dataset according to parameters
             let standard_scaled_data = scaler.transform(node_data);
-            println!("Data:\n{:?}\n", standard_scaled_data);
+            //println!("Data:\n{:?}\n", standard_scaled_data);
 
             // Hier schicken wir node_data als output an die nächste node bzw. den output
             self.output.send(standard_scaled_data).map_err(|e| UpdateError::Other(e.into()))?;

@@ -62,7 +62,7 @@ impl Node for DiffusionMapNode {
 
             // Generate sparse gaussian kernel with eps = 2 and 15 neighbors
             if let Ok(config) = self.config_input.next() {
-                println!("JW-Debug CSVToArrayNNode has received config.");
+                println!("JW-Debug DiffusionMapNode has received config.");
 
                 // Create embedding from kernel matrix using diffusion maps
                 let mapped_kernel = DiffusionMap::<f64>::params(config.embedding_size)
@@ -72,7 +72,7 @@ impl Node for DiffusionMapNode {
 
                 // Get embedding from the transformed kernel matrix
                 let embedding = mapped_kernel.embedding();
-                println!("Embedding:\n{:?}\n", embedding);
+                //println!("Embedding:\n{:?}\n", embedding);
     
                 let myoutput = DatasetBase::new(node_data.records, embedding.clone());
 
