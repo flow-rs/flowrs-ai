@@ -1,3 +1,5 @@
 pub mod clustering;
 pub mod model;
-pub mod preproccessing;
+pub mod PreproccessingNode;
+pub mod ArrayReshapeNode;
+pub mod ImageScalingNode;

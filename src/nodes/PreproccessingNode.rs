@@ -11,7 +11,8 @@ use ndarray::{
     OwnedRepr,
     ArrayBase,
     Array4,
-    Array
+    Array,
+    ArrayD
 };
 
 use image::{GenericImageView, imageops::FilterType, DynamicImage};
@@ -52,19 +53,16 @@ fn print_type_of<T>(_: &T) {
 }
 
 fn preproccessing_input() -> Result<ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>, UpdateError>{
-    let input_path = "C:/Users/Marcel/LRZ Sync+Share/Master/3_Semester/Hauptseminar_2/flow-rs/flowrs-ai/src/example_pic/crosswalk.jpg";
-    let img = image::open(input_path).expect("Failed to open image"); // img = input
+    //let input_path = "C:/Users/Marcel/LRZ Sync+Share/Master/3_Semester/Hauptseminar_2/flow-rs/flowrs-ai/src/example_pic/crosswalk.jpg";
+    //let img = image::open(input_path).expect("Failed to open image"); // img = input
     //let img = self.input;
 
-    let squeezenet_width: usize = 224;
-    let squeezenet_height: usize = 224;
+    let resized_image = self.input;
 
-    let resized_image = img.resize_exact(squeezenet_width as u32, squeezenet_height as u32, FilterType::CatmullRom);
-
-    let dim = Dim((1,3,squeezenet_width, squeezenet_height));
-    print_type_of(&squeezenet_height);
+    let (width, height) = resized_image.dimensions();
+    
+    let dim = Dim((1,3,width, height));
     let mut input_tensor: Array4<f32> = Array::zeros(dim);
-    print_type_of(&input_tensor);
      
     for pixel in resized_image.pixels() {
         let x = pixel.0 as usize;

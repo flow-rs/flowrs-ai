@@ -1,5 +1,5 @@
 mod nodes {
-    use flowrs_ai::preproccessing::PreProccessingNode;
+    use flowrs_ai::PreProccessingNode::PreProccessingNode;
     use flowrs::{node::{ChangeObserver, Node}};
 
     #[test]
