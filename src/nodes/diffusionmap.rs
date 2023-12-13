@@ -16,10 +16,10 @@ pub struct DiffusionMapConfig {
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct DiffusionMapNode {
     #[output]
-    pub output: Output<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>>>,
+    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>,
 
     #[input]
-    pub input: Input<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>,
+    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>,
 
     #[input]
     pub config_input: Input<DiffusionMapConfig>
@@ -65,7 +65,7 @@ impl Node for DiffusionMapNode {
                 let embedding = mapped_kernel.embedding();
                 //println!("Embedding:\n{:?}\n", embedding);
     
-                let myoutput = DatasetBase::new(node_data.records, embedding.clone());
+                let myoutput = DatasetBase::from(embedding.clone());
 
                 // Hier schicken wir node_data als output an die nächste node bzw. den output
                 self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
@@ -122,7 +122,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     [-3.3125455168563386e-14, 0.24999992391720385],
     [1.942479529165688e-12, -2.952213544990568e-8],
     [2.4594727976304506e-10, 0.00019504201876301383]];
-    let expected: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(test_input.clone(), expected_data.clone());
+    let expected: DatasetBase<Array2<f64>, Array1<()>> = DatasetBase::from(expected_data.clone());
 
     let actual = mock_output.next()?;
 

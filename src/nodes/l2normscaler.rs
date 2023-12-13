@@ -1,7 +1,7 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::{Array2, array, ArrayBase, OwnedRepr, Dim};
+use ndarray::{Array2, Array1, array, ArrayBase, OwnedRepr, Dim};
 use linfa::traits::Transformer;
 use linfa_preprocessing::norm_scaling::NormScaler;
 use serde::{Deserialize, Serialize};
@@ -12,10 +12,10 @@ use linfa::prelude::*;
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct L2NormscalerNode { // <--- Wenn man eine neue Node anlegt, einfach alles kopieren und hier den Namen ändern
     #[output]
-    pub output: Output<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
+    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
 
     #[input]
-    pub input: Input<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
+    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
 
     // Das bedeutet, unsere Node braucht als Input einen Array2<u8> und liefert als Output einen Array2<u8>
 }
