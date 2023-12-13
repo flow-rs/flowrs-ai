@@ -33,7 +33,6 @@ pub struct DbscanNode {
     #[input]
     pub dataset_input: Input<DatasetBase<Array2<f64>, Array1<()>>>, 
 
-    //input_dataset: Option<DatasetBase<Array2<f64>, Array1<()>>>,
     config: DbscanConfig
 }
 
