@@ -40,10 +40,10 @@ impl Node for ConvertNdarray2DatasetBase {
 
             let dataset = Dataset::from(node_data.clone());
 
-            println!("DatasetBase\n");
+            /*println!("DatasetBase\n");
             println!("Records:\n {}\n", dataset.records);
             println!("Targets:\n {:?}\n", dataset.targets);
-            println!("Feature names:\n {:?}\n", dataset.feature_names());
+            println!("Feature names:\n {:?}\n", dataset.feature_names());*/
 
             // Hier schicken wir node_data als output an die nächste node bzw. den output
             self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;

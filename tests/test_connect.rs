@@ -18,7 +18,6 @@ mod nodes {
                     csvToArrayN::{CSVToDatasetBaseNode, CSVToDatasetBaseConfig, self},
                     dbscan::DbscanNode,
                     diffusionmap::{DiffusionMapNode, self},
-                    dimred::{DimRedNode, self},
                     kmeans::KmeansNode,
                     maxabsscale::{MaxAbsScleNode, self},
                     minmaxscale::{MinMaxScaleNode, self},
@@ -67,7 +66,6 @@ mod nodes {
         let csv2arrayn_node: CSVToArrayNNode<> = CSVToArrayNNode::new(Some(&change_observer));
         let dbscan_node: DbscanNode<> = DbscanNode::new(Some(&change_observer));
         let diffusionmap_node: DiffusionMapNode<> = DiffusionMapNode::new(Some(&change_observer));
-        let dimred_node: DimRedNode<> = DimRedNode::new(Some(&change_observer));
         let kmeans_node: KmeansNode<> = KmeansNode::new(Some(&change_observer));
         let maxabsscale_node: MaxAbsScleNode<> = MaxAbsScleNode::new(Some(&change_observer));
         let minmaxscale_node: MinMaxScaleNode<> = MinMaxScaleNode::new(Some(&change_observer));
@@ -211,9 +209,19 @@ mod nodes {
 
         let test_input = String::from("Feature1,Feature2,Freature3,Feature4\n1.0,2.0,3.0,4.0\n3.0,4.0,5.0,6.0\n5.0,6.0,7.0,8.0\n7.0,4.0,1.0,9.0");
 
-        // Nodes
+        // Input Node
         let value_node = ValueNode::new(
             test_input,
+            Some(&change_observer),
+        );
+
+        // Config Nodes
+        let test_config_input = DbscanConfig{
+            min_points: 2,
+            tolerance: 0.5
+        };
+        let dbscan_config_node = ValueNode::new(
+            test_config_input,
             Some(&change_observer),
         );
 
@@ -230,6 +238,7 @@ mod nodes {
         connect(convertndarray2datasetbase.output.clone(), standardscale_node.input.clone());
         connect(standardscale_node.output.clone(), diffusionmap_node.input.clone());
         connect(diffusionmap_node.output.clone(), dbscan_node.dataset_input.clone());
+        connect(dbscan_config_node.output.clone(), dbscan_node.config_input.clone());
         connect(dbscan_node.output.clone(), debug_node.input.clone());
 
         // Flow
@@ -240,6 +249,7 @@ mod nodes {
         flow.add_node(standardscale_node);
         flow.add_node(diffusionmap_node);
         flow.add_node(dbscan_node);
+        flow.add_node(dbscan_config_node);
         flow.add_node(debug_node);
 
 
@@ -261,7 +271,7 @@ mod nodes {
                 .expect("Run failed.");
         });
         
-        thread::sleep(Duration::from_secs(4));
+        thread::sleep(Duration::from_secs(10));
 
         assert!(true);
 
