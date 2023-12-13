@@ -7,20 +7,16 @@ use linfa::traits::{Fit, Transformer};
 use linfa_preprocessing::linear_scaling::LinearScaler;
 use serde::{Deserialize, Serialize};
 
-
-// Definition eines Structs
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct StandardscaleNode { // <--- Wenn man eine neue Node anlegt, einfach alles kopieren und hier den Namen ändern
+pub struct StandardscaleNode {
     #[output]
-    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
+    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>,
 
     #[input]
-    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
+    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>,
 }
 
-// Das ist einfach der Konstruktur
 impl StandardscaleNode {
-    // Hier will der Konstruktur als einzigen Parameter einen ChangeObserver
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
@@ -29,36 +25,21 @@ impl StandardscaleNode {
     }
 }
 
-// Hier befinden sich die Methoden von unserer Node. Wir verwenden erstmal nur die Methoden, welche wir implementieren müssen, da diese von "Node" vorgegeben werden.
 impl Node for StandardscaleNode {
-    // on_update wird von der Pipeline automatisch getriggert, wenn diese Node einen Input bekommt.
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
-        // Hier überprüfen wir nur, ob ein input da ist und der passt
         if let Ok(node_data) = self.input.next() {
-            //println!("JW-Debug: StandardscaleNode has received: {}.", node_data.records);
             println!("JW-Debug: StandardscaleNode has received an update!");
 
-            // Learn scaling parameters
             let scaler = LinearScaler::standard().fit(&node_data).unwrap();
-            // scale dataset according to parameters
             let standard_scaled_data = scaler.transform(node_data);
-            //println!("Data:\n{:?}\n", standard_scaled_data);
 
-            // Hier schicken wir node_data als output an die nächste node bzw. den output
             self.output.send(standard_scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }
 }
 
-
-// #############################################################################
-// #############################################################################
-// Test, um die Node zu testen
-// Hier auf "|> Run Test" drücken, was unter "#[test" angezeigt wird
-// #############################################################################
-// #############################################################################
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
