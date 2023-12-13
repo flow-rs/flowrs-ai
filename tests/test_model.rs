@@ -4,7 +4,7 @@ mod nodes {
     use flowrs::{node::{ChangeObserver, Node}, connection::connect};
     use flowrs_std::value::ValueNode;
 
-    use ndarray::{ArrayD, s, IxDyn};
+    use ndarray::{ArrayD, s};
     use std::{env};
     use image::{imageops::FilterType, ImageBuffer, Pixel, Rgb};
 
@@ -27,6 +27,7 @@ mod nodes {
         connect(image_value.output.clone(), model_node.model_input.clone());
 
         let _ = config_value.on_ready();
+        let _ = model_node.on_update();
 
         let _ = image_value.on_ready();
 
