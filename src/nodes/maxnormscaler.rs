@@ -7,22 +7,16 @@ use linfa_preprocessing::norm_scaling::NormScaler;
 use serde::{Deserialize, Serialize};
 use linfa::prelude::*;
 
-
-// Definition eines Structs
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct MaxNormScalerNode { // <--- Wenn man eine neue Node anlegt, einfach alles kopieren und hier den Namen ändern
+pub struct MaxNormScalerNode { 
     #[output]
-    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
+    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>,
 
     #[input]
-    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
-
-    // Das bedeutet, unsere Node braucht als Input einen Array2<u8> und liefert als Output einen Array2<u8>
+    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>,
 }
 
-// Das ist einfach der Konstruktur
 impl MaxNormScalerNode {
-    // Hier will der Konstruktur als einzigen Parameter einen ChangeObserver
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
@@ -31,20 +25,18 @@ impl MaxNormScalerNode {
     }
 }
 
-// Hier befinden sich die Methoden von unserer Node. Wir verwenden erstmal nur die Methoden, welche wir implementieren müssen, da diese von "Node" vorgegeben werden.
 impl Node for MaxNormScalerNode {
-    // on_update wird von der Pipeline automatisch getriggert, wenn diese Node einen Input bekommt.
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
-        // Hier überprüfen wir nur, ob ein input da ist und der passt
         if let Ok(node_data) = self.input.next() {
-            println!("JW-Debug: MaxNormScalerNode has received: {}.", node_data.records);
+            println!("JW-Debug: MaxNormScalerNode has received data!"); //println!("JW-Debug: MaxNormScalerNode has received: {}.", node_data.records);
 
             let scaler = NormScaler::max();
             let normalized_data = scaler.transform(node_data.clone());
-            println!("Data:\n{:?}\n", normalized_data);
     
             self.output.send(normalized_data).map_err(|e| UpdateError::Other(e.into()))?;
+            println!("JW-Debug: MaxNormScalerNode has sent an output!");
+
         }
         Ok(())
     }
