@@ -31,18 +31,12 @@ impl Node for CSVToArrayNNode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(data) = self.input.next() {
-            //println!("JW-Debug CSVToArrayNNode has received: {}.", data);
             println!("JW-Debug: CSVToArrayNNode has received an update!");
 
-            // parameters
             let has_feature_names = true;
 
-            // convert String to ndarray
             let mut reader = ReaderBuilder::new().has_headers(has_feature_names).from_reader(data.as_bytes());
             let data_ndarray: Array2<f64> = reader.deserialize_array2_dynamic().map_err(|e| UpdateError::Other(e.into()))?;
-            
-            // debug
-            //println!("Ndarray: {}", data_ndarray);
 
             self.output.send(data_ndarray).map_err(|e| UpdateError::Other(e.into()))?;
         }

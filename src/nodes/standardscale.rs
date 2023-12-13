@@ -35,6 +35,7 @@ impl Node for StandardscaleNode {
             let standard_scaled_data = scaler.transform(node_data);
 
             self.output.send(standard_scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
+            println!("JW-Debug: StandardscaleNode has sent an output!");
         }
         Ok(())
     }

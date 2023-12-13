@@ -11,10 +11,10 @@ use serde::{Deserialize, Serialize};
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct MinMaxScaleNode {
     #[output]
-    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
+    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>, 
 
     #[input]
-    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
+    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>,
 
 }
 
@@ -31,16 +31,13 @@ impl Node for MinMaxScaleNode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(node_data) = self.input.next() {
-            println!("JW-Debug: MinMaxScaleNode has received: {}.", node_data.records);
+        println!("JW-Debug: MinMaxScaleNode has received an update!");//println!("JW-Debug: MinMaxScaleNode has received: {}.", node_data.records);
 
-            // max abs scaling
             let scaler = LinearScaler::min_max().fit(&node_data).unwrap();
             let dataset = scaler.transform(node_data);
 
-            // debug
-            println!("Scaled data: {}", dataset.records);
-
             self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
+            println!("JW-Debug: MinMaxScaleNode has sent an output!");
         }
         Ok(())
     }

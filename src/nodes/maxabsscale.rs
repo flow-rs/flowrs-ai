@@ -31,16 +31,14 @@ impl Node for MaxAbsScleNode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(dataset) = self.input.next() {
-            println!("JW-Debug: MaxAbsScalerNode has received: {}.", dataset.records);
+            println!("JW-Debug: MaxAbsScalerNode has received an update!");//println!("JW-Debug: MaxAbsScalerNode has received: {}.", dataset.records);
 
-            // max abs scaling
             let scaler = LinearScaler::max_abs().fit(&dataset).unwrap();
             let dataset = scaler.transform(dataset);
 
-            // debug
-            println!("Scaled data: {}", dataset.records);
-
             self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
+            println!("JW-Debug: MaxAbsScalerNode has sent an output!");
+
         }
         Ok(())
     }
