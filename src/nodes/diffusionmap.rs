@@ -43,18 +43,9 @@ impl Node for DiffusionMapNode {
 
         // Hier überprüfen wir nur, ob ein input da ist und der passt
         if let Ok(node_data) = self.input.next() {
-            println!("JW-Debug DiffusionMapNode has received: {}.", node_data.records);
+            println!("JW-Debug: DiffusionMapNode has received an update!");
+            //println!("JW-Debug DiffusionMapNode has received: {}.", node_data.records);
 
-            // #############################################################################
-            // #############################################################################
-            // Here begins the linfa_lib code
-            // #############################################################################
-            // #############################################################################
-
-            // impl<'a, F: Float> Transformer<&'a KernelBase<ArrayBase<OwnedRepr<F>, Dim<[usize; 2]>>, CsMatBase<F, usize, Vec<usize, Global>, Vec<usize, Global>, Vec<F, Global>, usize>>, DiffusionMap<F>> for DiffusionMapValidParams
-            // source
-            // fn transform(&self, kernel: &'a Kernel<F>) -> DiffusionMap<F>
-            // parameters: Kernel, embedding_size, steps
             let kernel = Kernel::params()
                 .kind(KernelType::Sparse(3))
                 .method(KernelMethod::Gaussian(2.0))

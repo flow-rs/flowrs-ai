@@ -36,7 +36,8 @@ impl Node for ConvertNdarray2DatasetBase {
 
         // Hier überprüfen wir nur, ob ein input da ist und der passt
         if let Ok(node_data) = self.input.next() {
-            println!("JW-Debug: ConvertNdarray2DatasetBase has received: {}.", node_data);
+            //println!("JW-Debug: ConvertNdarray2DatasetBase has received: {}.", node_data);
+            println!("JW-Debug: ConvertNdarray2DatasetBase has received an update!");
 
             let dataset = Dataset::from(node_data.clone());
 

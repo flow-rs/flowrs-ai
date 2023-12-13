@@ -52,6 +52,7 @@ where
     T: Clone + Send + DeserializeOwned,
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
+        println!("JW-Debug: CSVToDatasetBaseNode has received an update!");
      
         if let Ok(data) = self.data_input.next() {
             println!("JW-Debug CSVToDatasetBaseNode has received data: {}.", data);

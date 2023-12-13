@@ -36,7 +36,8 @@ impl Node for StandardscaleNode {
 
         // Hier überprüfen wir nur, ob ein input da ist und der passt
         if let Ok(node_data) = self.input.next() {
-            println!("JW-Debug: StandardscaleNode has received: {}.", node_data.records);
+            //println!("JW-Debug: StandardscaleNode has received: {}.", node_data.records);
+            println!("JW-Debug: StandardscaleNode has received an update!");
 
             // Learn scaling parameters
             let scaler = LinearScaler::standard().fit(&node_data).unwrap();

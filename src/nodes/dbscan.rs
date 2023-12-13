@@ -44,21 +44,22 @@ impl DbscanNode {
 
 impl Node for DbscanNode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: DbscanNode got an update!");
+        println!("JW-Debug: DbscanNode has received an update!");
 
         if let Ok(dataset) = self.dataset_input.next() {
-            println!("JW-Debug: DbscanNode has received: \n Records: {} \n Targets: {}.", dataset.records, dataset.targets);
+            println!("JW-Debug: DbscanNode has received data!"); //: \n Records: {} \n Targets: {}.", dataset.records, dataset.targets);
             self.input_dataset = Some(dataset);
         }
 
+        /*
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug DbscanNode has received config: {}, {}", config.min_points, config.tolerance);
-        }
+            println!("JW-Debug: DbscanNode has received config!"); // {}, {}", config.min_points, config.tolerance);
+        } */
 
         if let Some(data) = self.input_dataset.clone() {
 
             if let Ok(config) = self.config_input.next() {
-                println!("JW-Debug DbscanNode has received config: {}, {}", config.min_points, config.tolerance);
+                println!("JW-Debug: DbscanNode has received config: {}, {}", config.min_points, config.tolerance);
                 
                 // dbscan
                 let clusters = Dbscan::params(config.min_points)
@@ -77,6 +78,7 @@ impl Node for DbscanNode {
                 }*/
 
                 self.output.send(clusters).map_err(|e| UpdateError::Other(e.into()))?;
+                println!("JW-Debug: DbscanNode has sent an output!");
             }
         }
 

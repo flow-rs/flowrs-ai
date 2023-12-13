@@ -9,7 +9,7 @@ pub use self::nodes::pca;
 pub use self::nodes::dbscan;
 pub use self::nodes::minmaxscale;
 pub use self::nodes::convertndarray2datasetbase;
-pub use self::nodes::csvToArrayN;
+pub use self::nodes::csvtodatasetbase;
 pub use self::nodes::l1normscaler;
 pub use self::nodes::l2normscaler;
 pub use self::nodes::maxnormscaler;

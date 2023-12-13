@@ -8,7 +8,7 @@ pub mod minmaxscale;
 pub mod dbscan;
 pub mod diffusionmap;
 pub mod convertndarray2datasetbase;
-pub mod csvToArrayN;
+pub mod csvtodatasetbase;
 pub mod l1normscaler;
 pub mod l2normscaler;
 pub mod maxnormscaler;

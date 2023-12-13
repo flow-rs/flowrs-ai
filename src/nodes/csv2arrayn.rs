@@ -31,7 +31,8 @@ impl Node for CSVToArrayNNode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(data) = self.input.next() {
-            println!("JW-Debug CSVToArrayNNode has received: {}.", data);
+            //println!("JW-Debug CSVToArrayNNode has received: {}.", data);
+            println!("JW-Debug: CSVToArrayNNode has received an update!");
 
             // parameters
             let has_feature_names = true;

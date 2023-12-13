@@ -4,7 +4,7 @@ mod nodes {
     use std::{sync::mpsc::channel, thread, time::Duration, rc::Rc, any::Any};
 
     use flowrs::{
-        connection::{connect, Output},
+        connection::{connect, Output, Edge},
         exec::{
             execution::{Executor, StandardExecutor},
             node_updater::{MultiThreadedNodeUpdater, NodeUpdater},
@@ -15,9 +15,9 @@ mod nodes {
     };
 
     use flowrs_ai::{csv2arrayn::{CSVToArrayNNode, self},
-                    csvToArrayN::{CSVToDatasetBaseNode, CSVToDatasetBaseConfig, self},
-                    dbscan::DbscanNode,
-                    diffusionmap::{DiffusionMapNode, self},
+                    csvtodatasetbase::{CSVToDatasetBaseNode, CSVToDatasetBaseConfig, self},
+                    dbscan::{DbscanNode, DbscanConfig},
+                    diffusionmap::{DiffusionMapNode, self, DiffusionMapConfig},
                     kmeans::KmeansNode,
                     maxabsscale::{MaxAbsScleNode, self},
                     minmaxscale::{MinMaxScaleNode, self},
@@ -216,12 +216,20 @@ mod nodes {
         );
 
         // Config Nodes
-        let test_config_input = DbscanConfig{
+        let dbscan_config_input = DbscanConfig{
             min_points: 2,
             tolerance: 0.5
         };
         let dbscan_config_node = ValueNode::new(
-            test_config_input,
+            dbscan_config_input,
+            Some(&change_observer),
+        );
+        let diffusionmap_config_input = DiffusionMapConfig{
+            embedding_size: 2,
+            steps: 1
+        };
+        let diffusionmap_config_node = ValueNode::new(
+            diffusionmap_config_input,
             Some(&change_observer),
         );
 
@@ -231,13 +239,19 @@ mod nodes {
         let diffusionmap_node: DiffusionMapNode<> = DiffusionMapNode::new(Some(&change_observer));
         let dbscan_node: DbscanNode<> = DbscanNode::new(Some(&change_observer));
         let debug_node = DebugNode::<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<Option<usize>>, Dim<[usize; 1]>>>>::new(Some(&change_observer));
+        //let mock_ouput = Edge::new();
+        
+
 
         // Connections
         connect(value_node.output.clone(), csv2arrayn_node.input.clone());
         connect(csv2arrayn_node.output.clone(), convertndarray2datasetbase.input.clone());
         connect(convertndarray2datasetbase.output.clone(), standardscale_node.input.clone());
+
+        connect(diffusionmap_config_node.output.clone(), diffusionmap_node.config_input.clone());
         connect(standardscale_node.output.clone(), diffusionmap_node.input.clone());
         connect(diffusionmap_node.output.clone(), dbscan_node.dataset_input.clone());
+
         connect(dbscan_config_node.output.clone(), dbscan_node.config_input.clone());
         connect(dbscan_node.output.clone(), debug_node.input.clone());
 
@@ -247,6 +261,7 @@ mod nodes {
         flow.add_node(csv2arrayn_node);
         flow.add_node(convertndarray2datasetbase);
         flow.add_node(standardscale_node);
+        flow.add_node(diffusionmap_config_node);
         flow.add_node(diffusionmap_node);
         flow.add_node(dbscan_node);
         flow.add_node(dbscan_config_node);
