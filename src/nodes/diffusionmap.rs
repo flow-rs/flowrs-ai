@@ -1,7 +1,7 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::{prelude::*, OwnedRepr};
+use ndarray::prelude::*;
 use linfa::{traits::Transformer, DatasetBase, Dataset};
 use linfa_kernel::{Kernel, KernelType, KernelMethod};
 use linfa_reduction::DiffusionMap;
@@ -82,8 +82,6 @@ impl Node for DiffusionMapNode {
         Ok(())
     }
 }
-
-
 
 #[test]
 fn new_config_test() -> Result<(), UpdateError> {

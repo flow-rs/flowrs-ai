@@ -14,7 +14,16 @@ pub struct TsneConfig {
    pub approx_threshold: f64,
 }  
 
-// Definition eines Structs
+impl TsneConfig {
+    pub fn new(embedding_size: usize, perplexity: f64, approx_threshold: f64) -> Self {
+        TsneConfig {
+            embedding_size,
+            perplexity,
+            approx_threshold
+        }
+    }
+}
+
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct TsneNode {
     #[output]
@@ -24,53 +33,50 @@ pub struct TsneNode {
     pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>,
 
     #[input]
-    pub config_input: Input<TsneConfig>
+    pub config_input: Input<TsneConfig>,
+
+    config: TsneConfig
 }
 
-// Das ist einfach der Konstruktur
 impl TsneNode {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
             input: Input::new(),
-            config_input: Input::new()
+            config_input: Input::new(),
+            config: TsneConfig::new(2, 1.0, 0.1)
         }
     }
 }
 
-// Hier befinden sich die Methoden von unserer Node.
 impl Node for TsneNode {
-    // on_update wird von der Pipeline automatisch getriggert, wenn diese Node einen Input bekommt.
     fn on_update(&mut self) -> Result<(), UpdateError> {
+        println!("JW-Debug: TsneNode has received an update!");
+
+        // Neue Config kommt an
         if let Ok(config) = self.config_input.next() {
-                
-            if let Ok(node_data) = self.input.next() {
-                println!("JW-Debug: TsneNode has received: {}.", node_data.records);
-    
-                let dataset = TSneParams::embedding_size(config.embedding_size)
-                    .perplexity(config.perplexity)
-                    .approx_threshold(config.approx_threshold)
-                    .transform(node_data.clone())
-                    .unwrap();
-                println!("t-SNE:\n{:?}\n", dataset);
-    
-                // Hier schicken wir node_data als output an die nächste node bzw. den output
-                self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
-        } else {
-            //Err(UpdateError::Other(anyhow::Error::msg("No config received!")));
-        }    
+            println!("JW-Debug: TsneNode has received config: {}, {}, {}", config.embedding_size, config.perplexity, config.approx_threshold);
+
+            self.config = config;
+        }
+
+        // Daten kommen an
+        if let Ok(data) = self.input.next() {
+            println!("JW-Debug: TsneNode has received data!");
+
+            let dataset = TSneParams::embedding_size(self.config.embedding_size)
+            .perplexity(self.config.perplexity)
+            .approx_threshold(self.config.approx_threshold)
+            .transform(data.clone())
+            .unwrap();
+
+            self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }
 }
 
 
-// #############################################################################
-// #############################################################################
-// Test, um die Node zu testen
-// Hier auf "|> Run Test" drücken, was unter "#[test" angezeigt wird
-// #############################################################################
-// #############################################################################
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
@@ -97,21 +103,47 @@ fn input_output_test() -> Result<(), UpdateError> {
     and.config_input.send(test_config_input)?;
     and.on_update()?;
 
-    let expected: Array2<f64> = array![[1699.4869710195842, 28.635799050127282],
-    [-2855.4029300031552, -1650.0023484842843],
-    [-401.11703947700613, 1213.3522351242418],
-    [-2318.953494427868, 3207.352709992378],
-    [3698.4231386786414, -2017.4342429070707],
-    [1581.1775664430165, -646.5528618675547],
-    [-2181.4630513740067, -1801.7723410306903],
-    [-315.13553376905844, 275.25601936580455],
-    [-3002.8827027429775, 2507.5112437087837],
-    [4095.867075652829, -1116.3462129517347]];
+    let actual = mock_output.next()?.records;
+    
+    let expected_rows = 10;
+    let expected_cols = 2;
 
+    if actual.shape()[0] == expected_rows && actual.shape()[1] == expected_cols {
+        Ok(())
+    } else {
+        Err(UpdateError::RecvError { message: "Actual has wrong size".to_string() })
+    }
+}
+
+#[test]
+fn default_config_test() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+
+    let test_input: Array2<f64> = array![[1.1, 2.5, 3.2, 4.6, 5.2, 6.7], 
+                                         [7.8, 8.2, 9.5, 10.3, 11.0, 12.0], 
+                                         [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
+                                         [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
+                                         [10.0, 11.0, 12.0, 13.0, 14.0, 15.0],
+                                         [1.0, 2.0, 3.0, 4.0, 5.0, 6.0], 
+                                         [7.0, 8.0, 9.0, 10.0, 11.0, 12.0], 
+                                         [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
+                                         [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
+                                         [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
+    let dataset: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = Dataset::from(test_input.clone());
+    let mut and: TsneNode<> = TsneNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(and.output.clone(), mock_output.clone());
+    and.input.send(dataset)?;
+    and.on_update()?;
 
     let actual = mock_output.next()?.records;
 
+    let expected_rows = 10;
+    let expected_cols = 2;
 
-
-    Ok(assert!(true))
+    if actual.shape()[0] == expected_rows && actual.shape()[1] == expected_cols {
+        Ok(())
+    } else {
+        Err(UpdateError::RecvError { message: "Actual has wrong size".to_string() })
+    }
 }
