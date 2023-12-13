@@ -17,7 +17,7 @@ use image::{GenericImageView,DynamicImage};
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct PreProccessingNode
+pub struct PreproccessingNode
 {
     #[input]
     pub input: Input<DynamicImage>,
@@ -25,7 +25,7 @@ pub struct PreProccessingNode
     pub output: Output<ArrayD<f32>>,
 }
 
-impl PreProccessingNode
+impl PreproccessingNode
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
@@ -36,7 +36,7 @@ impl PreProccessingNode
 }
 
 
-impl Node for PreProccessingNode
+impl Node for PreproccessingNode
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
         if let Ok(input) = self.input.next(){

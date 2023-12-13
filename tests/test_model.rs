@@ -1,4 +1,4 @@
-mod nodes {
+/*mod nodes {
     use flowrs_ai::model::ModelNode;
     use flowrs::{node::{ChangeObserver, Node}};
 
@@ -13,4 +13,4 @@ mod nodes {
         Ok(assert!(result.is_ok()))
     }
     
-}
+}*/

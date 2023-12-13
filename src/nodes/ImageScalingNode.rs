@@ -35,7 +35,9 @@ impl ImageScalingNode
         }
     }
 }
-
+fn print_type_of<T>(_: &T) {
+    println!("{}", std::any::type_name::<T>())
+}
 
 impl Node for ImageScalingNode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
@@ -47,7 +49,7 @@ impl Node for ImageScalingNode {
                 scaling_config.height as u32,
                 FilterType::CatmullRom,
             );
-
+            
             if output.width() == scaling_config.width && output.height() == scaling_config.height{
                 println!("Resized image dimensions: {} x {}", output.width(), output.height());
             }else{
