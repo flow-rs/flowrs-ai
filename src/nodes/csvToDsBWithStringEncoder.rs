@@ -3,6 +3,7 @@ use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Outp
 use flowrs::RuntimeConnectable;
 
 use linfa::dataset::{DatasetBase, Float, Labels, Records};
+use linfa_kernel::Inner;
 use ndarray::{array, ArrayBase, OwnedRepr, Dim, Axis, Array1, Array2};
 use csv::ReaderBuilder;
 use ndarray_csv::Array2Reader;
@@ -21,7 +22,8 @@ pub struct CSVToEncodedDatasetBaseConfig {
    pub separator: u8,
    pub has_feature_names: bool,
    nominals: Vec<String>,
-   ordinals: Vec<String>
+   ordinals: Vec<String>,
+   others: Vec<String>
 }
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
@@ -102,6 +104,10 @@ where
                     .filter_map(|ordinal| headers.iter().position(|header| header == ordinal))
                     .collect();
 
+                let other_indices: HashSet<usize> = config.others.iter()
+                    .filter_map(|other| headers.iter().position(|header| header == other))
+                    .collect();
+
                 let mut data_ndarray: Array2<String> = reader.deserialize_array2_dynamic().unwrap(); // Use unwrap() for simplicity, handle errors as needed
             
 
@@ -115,22 +121,66 @@ where
                         nominal_data.push(col.iter().map(|x| x.to_string()).collect());
                     } else if ordinal_indices.contains(&col_idx) {
                         ordinal_data.push(col.iter().map(|x| x.to_string()).collect());
-                    } else {
+                    } else if other_indices.contains(&col_idx) {
                         other_data.push(col.iter().map(|x| x.parse().unwrap()).collect());
                     }
                 }
 
-                // Converting Data to Records:
+                let mut label_encoded_ordinals: Vec<Vec<f64>> = Vec::new();
+                for ordinal in ordinal_data.iter() {
+                    label_encoded_ordinals.push(label_encode(&ordinal));
+                }
+
+                // Converting Data to ndarrays:
                 let nominal_records: Array2<String> = Array2::from_shape_vec((nominal_data.len(), headers.len()), nominal_data.into_iter().flatten().collect()).unwrap();
-                let ordinal_records: Array2<String> = Array2::from_shape_vec((ordinal_data.len(), headers.len()), ordinal_data.into_iter().flatten().collect()).unwrap();
+                let ordinal_records: Array2<f64> = Array2::from_shape_vec((label_encoded_ordinals.len(), headers.len()), label_encoded_ordinals.into_iter().flatten().collect()).unwrap();
                 let other_records: Array2<f64> = Array2::from_shape_vec((other_data.len(), headers.len()), other_data.into_iter().flatten().collect()).unwrap();
                                 
+
+
+                // Label Encoding ordinal records
+                //let label_encoded_ordinals = label_encode_ordinal(&ordinal_records);
+
+                // One hot encoding nominal_records
+                //let (one_hot_encoded_nominals, nominal_feature_names) = one_hot_encode(&nominal_records);
+                //println!("nominal features: {:?}", nominal_feature_names);
+                //println!("One hot encoding: {:?}", one_hot_encoded_nominals);
+
+                // Converting ndarrays to DatasetBase
+                //let nominals_dbs:DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(one_hot_encoded_nominals.clone());
+                //let nominals:DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = nominals_dbs.with_feature_names(nominal_feature_names);
+                //let ordinals_dbs:DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(label_encoded_ordinals.clone());
+                //let ordinals:DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = ordinals_dbs.with_feature_names(config.ordinals);
+                //let others_dbs:DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(other_records.clone());
+                //let others = others_dbs.with_feature_names(config.others);
+
                 println!("Nominals: {:?}", nominal_records);
-                println!("Ordinals: {:?}", ordinal_records);
+                println!("Ordinal records: {:?}", ordinal_records);
+                //println!("Ordinals: {:?}", ordinals);
                 println!("Others: {:?}", other_records);
 
                 //let nominal_dataset:DatasetBase<_, _> = DatasetBase::from(nominal_records);
                 //let other_dataset: DatasetBase<f64, f64> = DatasetBase::from(Records::new(other_records, None));
+
+
+
+                // load data in a vector
+                let data: Vec<String> = vec!["hello".to_string(),
+                "world".to_string(),
+                "world".to_string(),
+                "world".to_string(),
+                "world".to_string(),
+                "again".to_string(),
+                "hello".to_string(),
+                "again".to_string(),
+                "goodbye".to_string()];
+
+                // Apply label encoding
+                let encoded_labels = label_encode(&data);
+
+                // Display the result
+                println!("Encoded Labels: {:?}", encoded_labels);
+                
 
 
 
@@ -153,12 +203,13 @@ where
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let test_data_input = String::from("Feate1,Feature2,Feature3,F4,F5,F6\n1,2,3,1,2,3\n4,5,6,1,2,3\n7,8,9,1,2,3\n7,8,9,1,2,3\n7,8,9,1,2,3\n7,8,9,1,2,3");
+    let test_data_input = String::from("Feate1,Feature2,Feature3,F4,F5,F6\n1,2,3,1,2,11\n4,5,6,1,5,3\n7,8,9,1,2,3\n10,8,9,1,6,4\n12,8,9,1,2,3\n7,8,9,1,2,3");
     let test_config_input = CSVToEncodedDatasetBaseConfig{
         separator: b',',
         has_feature_names: true,
-        nominals: vec!["Feature2".to_string(), "F5".to_string(), "F6".to_string()],
-        ordinals: vec!["Feate1".to_string()]
+        nominals: vec!["Feate1".to_string(), "Feature2".to_string()],
+        ordinals: vec!["F5".to_string(), "F6".to_string()],
+        others: vec!["Feature3".to_string(), "F4".to_string()]
     };
 
     let mut and: CSVToEncodedDatasetBaseNode<u32> = CSVToEncodedDatasetBaseNode::new(Some(&change_observer));
@@ -168,9 +219,28 @@ fn input_output_test() -> Result<(), UpdateError> {
     and.config_input.send(test_config_input)?;
     and.on_update()?;
 
-    let expected: Array2<u32> = array![[1, 2, 3, 1, 2, 3], [4, 5, 6, 1, 2, 3], [7, 8, 9, 1, 2, 3], [7, 8, 9, 1, 2, 3], [7, 8, 9, 1, 2, 3], [7, 8, 9, 1, 2, 3]];
+    let expected: Array2<u32> = array![[1, 2, 3, 1, 2, 11], [4, 5, 6, 1, 5, 3], [7, 8, 9, 1, 2, 3], [10, 8, 9, 1, 6, 4], [12, 8, 9, 1, 2, 3], [7, 8, 9, 1, 2, 3]];
     let actual: Array2<u32> = mock_output.next()?.records;
     
     Ok(assert!(expected == actual))
 }
 
+fn label_encode(input: &Vec<String>) -> Vec<f64> {
+    // Create a HashMap to store the mapping of unique strings to labels
+    let mut label_mapping: HashMap<&String, f64> = HashMap::new();
+
+    // Assign labels to unique strings
+    let mut label_counter = 0.0;
+    let labels: Vec<f64> = input
+        .iter()
+        .map(|s| {
+            *label_mapping.entry(s).or_insert_with(|| {
+                let label = label_counter;
+                label_counter += 1.0;
+                label
+            })
+        })
+        .collect();
+
+    labels
+}
