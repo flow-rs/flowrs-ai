@@ -15,6 +15,14 @@ pub struct PCAConfig {
    pub embedding_size: usize
 }
 
+impl PCAConfig {
+    pub fn new(embedding_size: usize) -> Self {
+        PCAConfig {
+            embedding_size
+        }
+    }
+}
+
 #[derive(RuntimeConnectable)]
 pub struct PCANode {
     #[input]
@@ -24,7 +32,9 @@ pub struct PCANode {
     pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>,
 
     #[input]
-    pub dataset_input: Input<DatasetBase<Array2<f64>, Array1<()>>>
+    pub dataset_input: Input<DatasetBase<Array2<f64>, Array1<()>>>,
+
+    config: PCAConfig
 }
 
 impl PCANode {
@@ -32,37 +42,36 @@ impl PCANode {
         Self {
             config_input: Input::new(),
             dataset_input: Input::new(),
-            output: Output::new(change_observer)
+            output: Output::new(change_observer),
+            config: PCAConfig::new(2)
+
         }
     }
 }
 
 impl Node for PCANode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
+        println!("JW-Debug: PCANode has received an update!");
 
-        if let Ok(dataset) = self.dataset_input.next() {
-            println!("JW-Debug PCANode has received: {}.", dataset.records);
+        // Neue Config kommt an
+        if let Ok(config) = self.config_input.next() {
+            println!("JW-Debug: PCANode has received config: {}", config.embedding_size);
+
+            self.config = config;
+        }
+
+        // Daten kommen an
+        if let Ok(data) = self.dataset_input.next() {
+            println!("JW-Debug: PCANode has received data!");
+
+            let embedding = Pca::params(self.config.embedding_size)
+                .fit(&data)
+                .unwrap();
+            let red_dataset = embedding.predict(data);
             
-            if let Ok(config) = self.config_input.next() {
-                println!("JW-Debug PCANode has received config.");
-            
-                // parameter
-                let embedding_size = 2;
-                // pca
-                let embedding = Pca::params(embedding_size)
-                    .fit(&dataset)
-                    .unwrap();
-                let red_dataset = embedding.predict(dataset);
-                
-                let myoutput= DatasetBase::from(red_dataset.targets.clone());
+            let myoutput= DatasetBase::from(red_dataset.targets.clone());
 
-                println!("DatasetBase\n");
-                println!("Records:\n {}\n", red_dataset.records.clone());
-                println!("Targets:\n {:?}\n", red_dataset.targets.clone());
-                println!("Feature names:\n {:?}\n", red_dataset.feature_names().clone());
-
-                self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
-            }
+            self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }
