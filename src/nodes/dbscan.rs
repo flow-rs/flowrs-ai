@@ -12,26 +12,35 @@ use linfa::dataset::Labels;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct DbscanConfig {
+pub struct DbscanConfig<T>
+where
+    T: linfa::Float
+{
     pub min_points: usize,
-    pub tolerance: f64
+    pub tolerance: T
 }
 
 #[derive(RuntimeConnectable)]
-pub struct DbscanNode {
+pub struct DbscanNode<T> 
+where
+    T: Clone + linfa::Float,
+{
     #[input]
-    pub config_input: Input<DbscanConfig>,
+    pub config_input: Input<DbscanConfig<T>>,
     
     #[output]
-    pub output: Output<DatasetBase<Array2<f64>, Array1<Option<usize>>>>,
+    pub output: Output<DatasetBase<Array2<T>, Array1<Option<usize>>>>,
 
     #[input]
-    pub dataset_input: Input<DatasetBase<Array2<f64>, Array1<()>>>, 
+    pub dataset_input: Input<DatasetBase<Array2<T>, Array1<()>>>, 
 
-    input_dataset: Option<DatasetBase<Array2<f64>, Array1<()>>>,
+    input_dataset: Option<DatasetBase<Array2<T>, Array1<()>>>,
 }
 
-impl DbscanNode {
+impl<T> DbscanNode<T> 
+where
+    T: Clone + linfa::Float,
+{
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             config_input: Input::new(),
@@ -42,7 +51,10 @@ impl DbscanNode {
     }
 }
 
-impl Node for DbscanNode {
+impl<T> Node for DbscanNode<T>
+where
+    T: Clone + Send + linfa::Float,
+{
     fn on_update(&mut self) -> Result<(), UpdateError> {
         println!("JW-Debug: DbscanNode got an update!");
 
@@ -95,12 +107,12 @@ fn input_output_test() -> Result<(), UpdateError> {
     [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
     [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
     let input_data = DatasetBase::from(record_input);
-    let test_config_input = DbscanConfig{
+    let test_config_input: DbscanConfig<f64> = DbscanConfig{
         min_points: 2,
         tolerance: 0.5
     };
 
-    let mut and: DbscanNode<> = DbscanNode::new(Some(&change_observer));
+    let mut and: DbscanNode<f64> = DbscanNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.dataset_input.send(input_data)?;

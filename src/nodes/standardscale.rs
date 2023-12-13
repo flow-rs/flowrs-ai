@@ -10,16 +10,22 @@ use serde::{Deserialize, Serialize};
 
 // Definition eines Structs
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct StandardscaleNode { // <--- Wenn man eine neue Node anlegt, einfach alles kopieren und hier den Namen ändern
+pub struct StandardscaleNode<T> 
+where
+    T: Clone,
+{ // <--- Wenn man eine neue Node anlegt, einfach alles kopieren und hier den Namen ändern
     #[output]
-    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
+    pub output: Output<DatasetBase<Array2<T>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
 
     #[input]
-    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
+    pub input: Input<DatasetBase<Array2<T>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
 }
 
 // Das ist einfach der Konstruktur
-impl StandardscaleNode {
+impl<T> StandardscaleNode<T> 
+where
+    T: Clone,
+{
     // Hier will der Konstruktur als einzigen Parameter einen ChangeObserver
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
@@ -30,7 +36,10 @@ impl StandardscaleNode {
 }
 
 // Hier befinden sich die Methoden von unserer Node. Wir verwenden erstmal nur die Methoden, welche wir implementieren müssen, da diese von "Node" vorgegeben werden.
-impl Node for StandardscaleNode {
+impl<T> Node for StandardscaleNode<T> 
+where
+    T: Clone + Send + linfa::Float,
+{
     // on_update wird von der Pipeline automatisch getriggert, wenn diese Node einen Input bekommt.
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
@@ -73,7 +82,7 @@ fn input_output_test() -> Result<(), UpdateError> {
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
     let dataset = Dataset::from(test_input.clone());
 
-    let mut test_node: StandardscaleNode<> = StandardscaleNode::new(Some(&change_observer));
+    let mut test_node: StandardscaleNode<f64> = StandardscaleNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
     test_node.input.send(dataset)?;
