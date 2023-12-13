@@ -1,5 +1,3 @@
-use std::{fmt::Debug};
-
 use flowrs::RuntimeConnectable;
 use flowrs::{
     connection::{Input, Output},
@@ -15,7 +13,7 @@ use ndarray::{
     ArrayD
 };
 
-use image::{GenericImageView, imageops::FilterType, DynamicImage};
+use image::{GenericImageView,DynamicImage};
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
@@ -41,9 +39,10 @@ impl PreProccessingNode
 impl Node for PreProccessingNode
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        let output = preproccessing_input();
-        if let Ok(output) = output{
+        if let Ok(input) = self.input.next(){
+            let output = preproccessing_input(input);
         }
+
         Ok(())
     }
 }
@@ -52,16 +51,16 @@ fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>())
 }
 
-fn preproccessing_input() -> Result<ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>, UpdateError>{
+fn preproccessing_input(image: DynamicImage) -> Result<ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>, UpdateError>{
     //let input_path = "C:/Users/Marcel/LRZ Sync+Share/Master/3_Semester/Hauptseminar_2/flow-rs/flowrs-ai/src/example_pic/crosswalk.jpg";
     //let img = image::open(input_path).expect("Failed to open image"); // img = input
     //let img = self.input;
 
-    let resized_image = self.input;
+    let resized_image = image;
 
     let (width, height) = resized_image.dimensions();
-    
-    let dim = Dim((1,3,width, height));
+
+    let dim = Dim((1,3,width as usize, height as usize));
     let mut input_tensor: Array4<f32> = Array::zeros(dim);
      
     for pixel in resized_image.pixels() {

@@ -6,21 +6,13 @@ use flowrs::{
     node::{Node, UpdateError, ChangeObserver},
 };
 use serde::{Deserialize, Serialize};
-use ndarray::{ 
-    Dim,
-    OwnedRepr,
-    ArrayBase,
-    Array4,
-    Array,
-    ArrayD
-};
 
-use image::{GenericImageView, imageops::FilterType, DynamicImage};
+use image::{imageops::FilterType, DynamicImage};
 
-#[derive(Clone, Deserialize, Serialize, Debug)]
+#[derive(Clone, Debug)]
 pub struct ScalingConfig {
-   pub width: int,
-   pub height: int
+   pub width: u32,
+   pub height: u32
 }
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
@@ -45,27 +37,25 @@ impl ImageScalingNode
 }
 
 
-impl Node for ImageScalingNode
-{
+impl Node for ImageScalingNode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        let output = image_scale();
-        if let Ok(output) = output{
+        let scaling_config = self.scaling_config.next();
+
+        if let Ok(scaling_config) = scaling_config {
+            let output = self.image.next().unwrap().resize_exact(
+                scaling_config.width as u32,
+                scaling_config.height as u32,
+                FilterType::CatmullRom,
+            );
+
+            if output.width() == scaling_config.width && output.height() == scaling_config.height{
+                println!("Resized image dimensions: {} x {}", output.width(), output.height());
+            }else{
+                //Err(err) => println!("Error: {}", err.message);
+            }
         }
+
         Ok(())
     }
-}
-
-fn print_type_of<T>(_: &T) {
-    println!("{}", std::any::type_name::<T>())
-}
-
-fn image_scale() -> Result<DynamicImage, UpdateError>{
-
-    let width: usize = scaling_config.width;
-    let height: usize = scaling_config.height;
-
-    let resized_image = self.image.resize_exact(width as u32, height as u32, FilterType::CatmullRom);
-
-    Ok(resized_image)
 }
 

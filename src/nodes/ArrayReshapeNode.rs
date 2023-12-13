@@ -5,31 +5,25 @@ use flowrs::{
     connection::{Input, Output},
     node::{Node, UpdateError, ChangeObserver},
 };
-use serde::{Deserialize, Serialize};
 use ndarray::{ 
+    ArrayD,
     Dim,
-    OwnedRepr,
-    ArrayBase,
-    Array4,
-    Array,
-    ArrayD
+    IxDynImpl
 };
 
-use image::{GenericImageView, imageops::FilterType, DynamicImage};
-
-#[derive(Clone, Deserialize, Serialize, Debug)]
+#[derive(Clone, Debug)]
 pub struct ReshapeConfig {
-   pub dimension: ArrayD<f32>
+   pub dimension: Dim<IxDynImpl>
 }
 
-//#[derive(RuntimeConnectable, Deserialize, Serialize)]
+#[derive(RuntimeConnectable)]
 pub struct ArrayReshapeNode
 {
     #[input]
-    pub input: ArrayD<f32>,
-    pub ReshapeConfig: Input<ReshapeConfig>,
+    pub input: Input<ArrayD<f32>>,
+    pub reshape_config: Input<ReshapeConfig>,
     #[output]
-    pub output: ArrayD<f32>,
+    pub output: Output<ArrayD<f32>>,
 }
 
 impl ArrayReshapeNode
@@ -37,6 +31,7 @@ impl ArrayReshapeNode
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             input: Input::new(),
+            reshape_config: Input::new(),
             output: Output::new(change_observer),
         }
     }
@@ -46,20 +41,16 @@ impl ArrayReshapeNode
 impl Node for ArrayReshapeNode
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        let output = reshape_array();
-        if let Ok(output) = output{
+        let reshape_config = self.reshape_config.next();
+        if let Ok(reshape_config) = reshape_config{
+            let output = self.input.reshape(reshape_config.dimension);
+            if output.shape() == reshape_config.dimension{
+                println!("Reshaped successfully with dimension: {}", output.shape());
+        }   else{
+                //Err(err) => println!("Error: Could not reshape the input");
+        }
         }
         Ok(())
     }
-}
-
-fn print_type_of<T>(_: &T) {
-    println!("{}", std::any::type_name::<T>())
-}
-
-fn reshape_array() -> Result<ArrayD<f32>, UpdateError>{
-    let reshaped_array = self.input.into_shape(self.ReshapeConfig.dimension)
-    
-    Ok(reshaped_array)
 }
 
