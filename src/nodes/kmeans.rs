@@ -22,10 +22,10 @@ pub struct KmeansNode {
     pub config_input: Input<KmeansConfig>,
 
     #[output]
-    pub output: Output<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<usize>, Dim<[usize; 1]>>>>,
+    pub output: Output<DatasetBase<Array2<f64>, Array1<usize>>>,
 
     #[input]
-    pub input: Input<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>>>, 
+    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>, 
 }
 
 impl KmeansNode {
@@ -46,10 +46,12 @@ impl Node for KmeansNode {
 
         // Hier überprüfen wir nur, ob ein input da ist und der passt
         if let Ok(node_data) = self.input.next() {
-            println!("JW-Debug: KmeansNode has received: \n Records: {} \n Targets: {}.", node_data.records, node_data.targets);
+            println!("JW-Debug: KmeansNode has received: \n Records: {}.", node_data.records);
             
             if let Ok(config) = self.config_input.next() {
                 println!("JW-Debug CSVToArrayNNode has received config.");
+
+                let records = node_data.records.clone();
 
                 let model = KMeans::params(config.num_of_dim)
                 .max_n_iterations(config.max_n_iterations)
@@ -61,7 +63,7 @@ impl Node for KmeansNode {
                 let result = model.predict(node_data);
                 println!("Result: {:?}\n", result);
     
-                let myoutput: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<usize>, Dim<[usize; 1]>>> = DatasetBase::new(result.records.clone(), result.targets.clone());
+                let myoutput: DatasetBase<Array2<f64>, Array1<usize>> = DatasetBase::new(records, result.targets.clone());
     
                 // Hier schicken wir node_data als output an die nächste node bzw. den output
                 self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
@@ -110,7 +112,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     [14.63575200500477, 1.1072539713398344],
     [-3.347031741680441, -4.147375003300382],
     [-4.622799446757189, 10.4931265494172]];
-    let input_data: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(record_input.clone(), target_input.clone());
+    let input_data = DatasetBase::from(record_input.clone());
 
     let mut and: KmeansNode<> = KmeansNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
@@ -120,7 +122,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     and.on_update()?;
 
     let expected = array![2, 0, 1, 2, 0, 2, 0, 1, 2, 0];
-    let actual: DatasetBase<ArrayBase<ndarray::OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<ndarray::OwnedRepr<usize>, Dim<[usize; 1]>>> = mock_output.next()?;
+    let actual = mock_output.next()?;
 
     Ok(assert!(expected == actual.targets()))
 }

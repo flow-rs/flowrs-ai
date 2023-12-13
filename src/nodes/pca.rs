@@ -3,7 +3,7 @@ use std::arch::x86_64::_MM_EXCEPT_DENORM;
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::{Array2, array, ArrayBase, Dim, OwnedRepr};
+use ndarray::{Array2, Array1, array, ArrayBase, Dim, OwnedRepr};
 use linfa::{Dataset, DatasetBase};
 use linfa_reduction::Pca;
 use linfa::traits::{Fit, Predict};
@@ -21,10 +21,10 @@ pub struct PCANode {
     pub config_input: Input<PCAConfig>,
 
     #[output]
-    pub output: Output<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>>>,
+    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>,
 
     #[input]
-    pub dataset_input: Input<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>
+    pub dataset_input: Input<DatasetBase<Array2<f64>, Array1<()>>>
 }
 
 impl PCANode {
@@ -54,7 +54,7 @@ impl Node for PCANode {
                     .unwrap();
                 let red_dataset = embedding.predict(dataset);
                 
-                let myoutput: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(red_dataset.records.clone(), red_dataset.targets.clone());
+                let myoutput= DatasetBase::from(red_dataset.targets.clone());
 
                 println!("DatasetBase\n");
                 println!("Records:\n {}\n", red_dataset.records.clone());
@@ -89,10 +89,10 @@ fn input_output_test() -> Result<(), UpdateError> {
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.dataset_input.send(dataset)?;
-    and.config_input.send(test_config_input);
+    and.config_input.send(test_config_input)?;
     and.on_update()?;
 
-    let expected_data: Array2<f64> = array![[-3.076047733203457, -10.562293260063301],
+    let expected: Array2<f64> = array![[-3.076047733203457, -10.562293260063301],
                                        [-3.561730416569943, 3.951032231750752],
                                        [14.63575200500477, 1.1072539713398344], 
                                        [-3.347031741680441, -4.147375003300382],
@@ -102,21 +102,8 @@ fn input_output_test() -> Result<(), UpdateError> {
                                        [14.63575200500477, 1.1072539713398344],
                                        [-3.347031741680441, -4.147375003300382],
                                        [-4.622799446757189, 10.4931265494172]];
-    let expected: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(test_input.clone(), expected_data.clone());
 
     let actual = mock_output.next()?;
 
-
-    println!("Actual\n");
-    println!("Records:\n {}\n", actual.records.clone());
-    println!("Targets:\n {:?}\n", actual.targets.clone());
-    println!("Feature names:\n {:?}\n", actual.feature_names().clone());
-
-    println!("Expected\n");
-    println!("Records:\n {}\n", expected.records.clone());
-    println!("Targets:\n {:?}\n", expected.targets.clone());
-    println!("Feature names:\n {:?}\n", expected.feature_names().clone());
-
-
-    Ok(assert!(expected.targets == actual.targets))
+    Ok(assert!(expected == actual.records))
 }

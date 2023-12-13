@@ -15,7 +15,7 @@ pub struct ConvertNdarray2DatasetBase { // <--- Wenn man eine neue Node anlegt, 
 
     #[output]
     //pub output: Output<DatasetBase<(), ndarray::ArrayBase<ndarray::OwnedRepr<f64>, ndarray::Dim<[usize; 2]>>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
-    pub output: Output<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>>>
+    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>
 }
 
 // Das ist einfach der Konstruktur
