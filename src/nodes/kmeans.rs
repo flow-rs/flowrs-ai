@@ -63,7 +63,7 @@ impl Node for KmeansNode {
 
         // Daten kommen an
         if let Ok(data) = self.input.next() {
-            println!("JW-Debug: DbscanNode has received data!");
+            println!("JW-Debug: KmeansNode has received data!");
 
             let records = data.records.clone();
 
@@ -78,6 +78,7 @@ impl Node for KmeansNode {
             let myoutput: DatasetBase<Array2<f64>, Array1<usize>> = DatasetBase::new(records, result.targets.clone());
 
             self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
+            println!("JW-Debug: KmeansNode has sent an output!");
         }        
         Ok(())
     }
