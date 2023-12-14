@@ -1,19 +1,17 @@
 mod nodes {
     use flowrs::{node::{ChangeObserver, Node}, connection::connect};
     use flowrs_std::value::ValueNode;
+    use flowrs_img::webcam;
     use flowrs_ai::ImageScalingNode::{ImageScalingNode, ScalingConfig};
     use std::{env};
     use image::{DynamicImage};
 
 
     #[test]
-    fn test_scaling() -> Result<(), anyhow::Error> {
+    fn test_webcamwithonnx() -> Result<(), anyhow::Error> {
         let change_observer: ChangeObserver = ChangeObserver::new();
-        // getting the image to resize
-        let image_path = env::current_dir()
-        .expect("Failed to obtain current directory")
-        .join("src/example_pic/crosswalk.jpg");
-        let img = image::open(image_path).expect("Failed to open image");
+        // getting the image to resize from camera
+
         // creating scaling config
         let scaling_config = ScalingConfig{
             width: 224,

@@ -44,17 +44,27 @@ impl Node for ImageScalingNode {
         let scaling_config = self.scaling_config.next();
 
         if let Ok(scaling_config) = scaling_config {
-            let output = self.image.next().unwrap().resize_exact(
-                scaling_config.width as u32,
-                scaling_config.height as u32,
-                FilterType::CatmullRom,
-            );
-            
-            if output.width() == scaling_config.width && output.height() == scaling_config.height{
-                println!("Resized image dimensions: {} x {}", output.width(), output.height());
+            let image = self.image.next();
+            if let Ok(image) = image{
+                let output = image.resize_exact(
+                    scaling_config.width as u32,
+                    scaling_config.height as u32,
+                    FilterType::CatmullRom,
+                );
+
+                if output.width() == scaling_config.width && output.height() == scaling_config.height{
+                    println!("Resized image dimensions: {} x {}", output.width(), output.height());
+                }else{
+                    return Err(UpdateError::Other(anyhow::Error::msg(
+                        "Resizing was unsuccessful",)));
+                }
             }else{
-                //Err(err) => println!("Error: {}", err.message);
+                return Err(UpdateError::Other(anyhow::Error::msg(
+                    "Unable to get image",)));
             }
+        }else{
+            return Err(UpdateError::Other(anyhow::Error::msg(
+                "Unable to get the scaling configuration",)));
         }
 
         Ok(())
