@@ -27,11 +27,10 @@ impl MaxOutputNode
         }
     }
 
-    fn get_max_output(&mut self, tensor: Array1<f32>) -> Option<String> {
+    fn get_max_output(&mut self, tensor: Array1<f32>) -> Result<String, String> {
         if let Some(classes) = &self.classes {
             if tensor.len() != classes.len() {
-                eprintln!("Input tensor and classes need to have the same size!");
-                return None;
+                return Err("Input tensor and classes need to have the same size!".to_string());
             }
             let max_index = tensor.iter()
                 .enumerate()
@@ -41,14 +40,14 @@ impl MaxOutputNode
                 Some(max_index) => {
                     let classes = &self.classes.as_mut().expect("no class vector provided");
                     let class = &classes[max_index];
-                    Some(class.clone())
+                    Ok(class.clone())
                 }
                 None => {
-                    panic!("No max index found")
+                    Err("max index not foutn".to_string())
                 }
             }
         } else {
-            None
+            Err("No classes provided".to_string())
         }  
     }
 }
@@ -62,11 +61,11 @@ impl Node for MaxOutputNode
         if let Ok(output_tensor) = self.output_tensor.next() {
             let result = self.get_max_output(output_tensor);
             match result {
-                Some(result) => {
+                Ok(result) => {
                     let _ = self.output_class.send(result);
                 }
-                None => {
-                    UpdateError::SendError { message: "Could not find result".to_string() };
+                Err(e) => {
+                    UpdateError::SendError { message: e };
                 }
             }
             
