@@ -4,7 +4,7 @@ use flowrs::RuntimeConnectable;
 
 use linfa::dataset::{DatasetBase, Float, Labels, Records};
 use linfa_kernel::Inner;
-use ndarray::{array, ArrayBase, OwnedRepr, Dim, Axis, Array1, Array2, s};
+use ndarray::{array, ArrayBase, OwnedRepr, Dim, Axis, Array1, Array2, s, concatenate};
 use csv::ReaderBuilder;
 use ndarray_csv::Array2Reader;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
@@ -143,64 +143,25 @@ where
                 }
 
                 // Converting Data to ndarrays:
-                let nominal_records = concatenate_arrays(one_hot_encoded_nominals);
+                let nominal_records: Array2<f64> = concatenate_arrays(one_hot_encoded_nominals);
                 let ordinal_records: Array2<f64> = Array2::from_shape_vec((label_encoded_ordinals.len(), headers.len()), label_encoded_ordinals.into_iter().flatten().collect()).unwrap();
                 let other_records: Array2<f64> = Array2::from_shape_vec((other_data.len(), headers.len()), other_data.into_iter().flatten().collect()).unwrap();
-                                
 
+                let combined_records = concatenate![
+                    Axis(0),
+                    nominal_records.view(),
+                    ordinal_records.view(),
+                    other_records.view()
+                ];
 
-                // Label Encoding ordinal records
-                //let label_encoded_ordinals = label_encode_ordinal(&ordinal_records);
+                let mut combined_feature_names: Vec<String> = Vec::new();
+                combined_feature_names.extend(one_hot_feature_names);
+                combined_feature_names.extend(config.ordinals);
+                combined_feature_names.extend(config.others);
 
-                // One hot encoding nominal_records
-                //let (one_hot_encoded_nominals, nominal_feature_names) = one_hot_encode(&nominal_records);
-                //println!("nominal features: {:?}", nominal_feature_names);
-                //println!("One hot encoding: {:?}", one_hot_encoded_nominals);
+                let encoded_dataset = DatasetBase::from(combined_records).with_feature_names(combined_feature_names);
 
-                // Converting ndarrays to DatasetBase
-                //let nominals_dbs:DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(one_hot_encoded_nominals.clone());
-                //let nominals:DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = nominals_dbs.with_feature_names(nominal_feature_names);
-                //let ordinals_dbs:DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(label_encoded_ordinals.clone());
-                //let ordinals:DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = ordinals_dbs.with_feature_names(config.ordinals);
-                //let others_dbs:DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(other_records.clone());
-                //let others = others_dbs.with_feature_names(config.others);
-
-                println!("Nominals: {:?}", nominal_records);
-                println!("Feature names: {:?}", one_hot_feature_names);
-                println!("Ordinal records: {:?}", ordinal_records);
-                //println!("Ordinals: {:?}", ordinals);
-                println!("Others: {:?}", other_records);
-
-                //let nominal_dataset:DatasetBase<_, _> = DatasetBase::from(nominal_records);
-                //let other_dataset: DatasetBase<f64, f64> = DatasetBase::from(Records::new(other_records, None));
-
-
-
-                // load data in a vector
-                let data: Vec<String> = vec!["hello".to_string(),
-                "world".to_string(),
-                "world".to_string(),
-                "world".to_string(),
-                "world".to_string(),
-                "again".to_string(),
-                "hello".to_string(),
-                "again".to_string(),
-                "goodbye".to_string()];
-
-                // Apply label encoding
-                let encoded_labels: Vec<f64> = label_encode(&data.clone());
-
-                // Apply one-hot encoding
-                let (one_hot_encoding, feature_names) = one_hot_encode(&data, "text".to_string());
-
-
-                // Display the result
-                println!("Encoded Labels: {:?}", encoded_labels);
-                println!("Feature Names: {:?}", feature_names);
-                println!("One-Hot Encoding:\n{:?}", one_hot_encoding);
-                
-
-
+                println!("Encoded dataset: {:?}", encoded_dataset);
 
                 //////////////////////////////////////////////////////////////////////////////
 
@@ -293,7 +254,7 @@ fn one_hot_encode(input: &Vec<String>, feature_name: String) -> (Array2<f64>, Ve
     (encoding, feature_names)
 }
 
-fn concatenate_arrays(mut arrays: Vec<Array2<f64>>) -> Array2<f64> {
+fn concatenate_arrays(arrays: Vec<Array2<f64>>) -> Array2<f64> {
     // Check if the vector is not empty
     if arrays.is_empty() {
         panic!("Input vector is empty");
@@ -305,25 +266,16 @@ fn concatenate_arrays(mut arrays: Vec<Array2<f64>>) -> Array2<f64> {
     // Create a new Array2 to hold the concatenated data
     let mut result = Array2::zeros((rows, cols));
 
-    // Starting column index in the result array
-    let mut col_index = 0;
-
     // Iterate over the arrays and fill the result array
-    for array in arrays {
+    for (col_index, array) in arrays.iter().flat_map(|arr| arr.axis_iter(Axis(1))).enumerate() {
         // Check if the array has the same number of rows as the first one
         if array.shape()[0] != rows {
             panic!("Inconsistent number of rows in arrays");
         }
 
-        // Get the number of columns in the current array
-        let current_cols = array.shape()[1];
-
         // Copy the data from the current array into the result
-        result.slice_mut(s![.., col_index..col_index + current_cols]).assign(&array);
-
-        // Update the column index for the next array
-        col_index += current_cols;
+        result.slice_mut(s![.., col_index]).assign(&array);
     }
 
-    result
+    result.t().to_owned()
 }
