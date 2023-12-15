@@ -9,24 +9,33 @@ use serde::{Deserialize, Serialize};
 
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct MinMaxRangeScaleConfig {
-   pub min: f64,
-   pub max: f64
+pub struct MinMaxRangeScaleConfig<T>
+where
+    T: linfa::Float,
+{
+   pub min: T,
+   pub max: T
 }
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct MinMaxRangeScaleNode {
+pub struct MinMaxRangeScaleNode<T> 
+where
+    T: Clone + linfa::Float,
+{
     #[output]
-    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
+    pub output: Output<DatasetBase<Array2<T>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
 
     #[input]
-    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
+    pub input: Input<DatasetBase<Array2<T>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
 
     #[input]
-    pub config_input: Input<MinMaxRangeScaleConfig>
+    pub config_input: Input<MinMaxRangeScaleConfig<T>>
 }
 
-impl MinMaxRangeScaleNode {
+impl<T> MinMaxRangeScaleNode<T> 
+where
+    T: Clone + linfa::Float,
+{
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
@@ -37,7 +46,10 @@ impl MinMaxRangeScaleNode {
 }
 
 
-impl Node for MinMaxRangeScaleNode {
+impl<T> Node for MinMaxRangeScaleNode<T> 
+where 
+    T: Clone + Send + linfa::Float,
+{
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(node_data) = self.input.next() {
@@ -80,7 +92,7 @@ fn input_output_test() -> Result<(), UpdateError> {
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
     let dataset = Dataset::from(test_input.clone());
 
-    let mut test_node: MinMaxRangeScaleNode<> = MinMaxRangeScaleNode::new(Some(&change_observer));
+    let mut test_node: MinMaxRangeScaleNode<f64> = MinMaxRangeScaleNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
     test_node.input.send(dataset)?;

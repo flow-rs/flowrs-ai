@@ -16,18 +16,24 @@ pub struct PCAConfig {
 }
 
 #[derive(RuntimeConnectable)]
-pub struct PCANode {
+pub struct PCANode<T> 
+where
+    T: Clone,
+{
     #[input]
     pub config_input: Input<PCAConfig>,
 
     #[output]
-    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>,
+    pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub dataset_input: Input<DatasetBase<Array2<f64>, Array1<()>>>
+    pub dataset_input: Input<DatasetBase<Array2<T>, Array1<()>>>
 }
 
-impl PCANode {
+impl<T> PCANode<T> 
+where
+    T: Clone,
+{
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             config_input: Input::new(),
@@ -37,7 +43,7 @@ impl PCANode {
     }
 }
 
-impl Node for PCANode {
+impl Node for PCANode<f64> {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(dataset) = self.dataset_input.next() {
@@ -68,6 +74,39 @@ impl Node for PCANode {
     }
 }
 
+impl Node for PCANode<f32> {
+    fn on_update(&mut self) -> Result<(), UpdateError> {
+
+        if let Ok(dataset) = self.dataset_input.next() {
+            println!("JW-Debug PCANode has received: {}.", dataset.records);
+
+            let dataset_f64 = DatasetBase::from(dataset.records.mapv(|x| x as f64));
+            
+            if let Ok(config) = self.config_input.next() {
+                println!("JW-Debug PCANode has received config.");
+            
+                // parameter
+                let embedding_size = 2;
+                // pca
+                let embedding = Pca::params(embedding_size)
+                    .fit(&dataset_f64)
+                    .unwrap();
+                let red_dataset = embedding.predict(dataset_f64);
+                
+                let myoutput= DatasetBase::from(red_dataset.targets.mapv(|x| x as f32));
+
+                println!("DatasetBase\n");
+                println!("Records:\n {}\n", red_dataset.records.clone());
+                println!("Targets:\n {:?}\n", red_dataset.targets.clone());
+                println!("Feature names:\n {:?}\n", red_dataset.feature_names().clone());
+
+                self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
+            }
+        }
+        Ok(())
+    }
+}
+
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
@@ -85,7 +124,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     let test_config_input = PCAConfig{
         embedding_size: 2,
     };
-    let mut and: PCANode<> = PCANode::new(Some(&change_observer));
+    let mut and: PCANode<f64> = PCANode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.dataset_input.send(dataset)?;

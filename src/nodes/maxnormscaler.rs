@@ -10,18 +10,24 @@ use linfa::prelude::*;
 
 // Definition eines Structs
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct MaxNormScalerNode { // <--- Wenn man eine neue Node anlegt, einfach alles kopieren und hier den Namen ändern
+pub struct MaxNormScalerNode<T>
+where
+    T: Clone,
+{ // <--- Wenn man eine neue Node anlegt, einfach alles kopieren und hier den Namen ändern
     #[output]
-    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
+    pub output: Output<DatasetBase<Array2<T>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Output-Variable vom Typ Array2<u8>
 
     #[input]
-    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
+    pub input: Input<DatasetBase<Array2<T>, Array1<()>>>, // <--- Wir haben in diesem Fall eine Input-Variable vom Typ Array2<u8>
 
     // Das bedeutet, unsere Node braucht als Input einen Array2<u8> und liefert als Output einen Array2<u8>
 }
 
 // Das ist einfach der Konstruktur
-impl MaxNormScalerNode {
+impl<T> MaxNormScalerNode<T> 
+where
+    T: Clone,
+{
     // Hier will der Konstruktur als einzigen Parameter einen ChangeObserver
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
@@ -32,7 +38,10 @@ impl MaxNormScalerNode {
 }
 
 // Hier befinden sich die Methoden von unserer Node. Wir verwenden erstmal nur die Methoden, welche wir implementieren müssen, da diese von "Node" vorgegeben werden.
-impl Node for MaxNormScalerNode {
+impl<T> Node for MaxNormScalerNode<T> 
+where
+    T: Clone + Send + linfa::Float,
+{
     // on_update wird von der Pipeline automatisch getriggert, wenn diese Node einen Input bekommt.
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
@@ -61,7 +70,7 @@ fn input_output_test() -> Result<(), UpdateError> {
 
     let dataset = Dataset::from(test_input.clone());
 
-    let mut test_node: MaxNormScalerNode<> = MaxNormScalerNode::new(Some(&change_observer));
+    let mut test_node: MaxNormScalerNode<f64> = MaxNormScalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
     test_node.input.send(dataset)?;

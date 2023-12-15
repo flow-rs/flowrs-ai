@@ -9,16 +9,22 @@ use serde::{Deserialize, Serialize};
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct MaxAbsScleNode {
+pub struct MaxAbsScleNode<T> 
+where
+    T: Clone,
+{
     #[output]
-    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>, 
+    pub output: Output<DatasetBase<Array2<T>, Array1<()>>>, 
 
     #[input]
-    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>,
+    pub input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
 }
 
-impl MaxAbsScleNode {
+impl<T> MaxAbsScleNode<T> 
+where
+    T: Clone,
+{
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
@@ -27,7 +33,10 @@ impl MaxAbsScleNode {
     }
 }
 
-impl Node for MaxAbsScleNode {
+impl<T> Node for MaxAbsScleNode<T> 
+where
+    T: Clone + Send + linfa::Float
+{
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(dataset) = self.input.next() {
@@ -61,7 +70,7 @@ fn input_output_test() -> Result<(), UpdateError> {
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
     let dataset = Dataset::from(test_input.clone());
 
-    let mut test_node: MaxAbsScleNode<> = MaxAbsScleNode::new(Some(&change_observer));
+    let mut test_node: MaxAbsScleNode<f64> = MaxAbsScleNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
     test_node.input.send(dataset)?;

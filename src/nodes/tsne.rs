@@ -8,27 +8,36 @@ use linfa_tsne::TSneParams;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct TsneConfig {
+pub struct TsneConfig<T> 
+where
+    T: Clone + linfa::Float,
+{
    pub embedding_size: usize,
-   pub perplexity: f64,
-   pub approx_threshold: f64,
+   pub perplexity: T,
+   pub approx_threshold: T,
 }  
 
 // Definition eines Structs
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct TsneNode {
+pub struct TsneNode<T> 
+where
+    T: Clone + linfa::Float,
+{
     #[output]
-    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>,
+    pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>,
+    pub input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub config_input: Input<TsneConfig>
+    pub config_input: Input<TsneConfig<T>>
 }
 
 // Das ist einfach der Konstruktur
-impl TsneNode {
+impl<T> TsneNode<T> 
+where 
+    T: Clone + linfa::Float,
+{
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
@@ -39,7 +48,10 @@ impl TsneNode {
 }
 
 // Hier befinden sich die Methoden von unserer Node.
-impl Node for TsneNode {
+impl<T> Node for TsneNode<T>
+where
+    T: Clone + Send + linfa::Float,
+{
     // on_update wird von der Pipeline automatisch getriggert, wenn diese Node einen Input bekommt.
     fn on_update(&mut self) -> Result<(), UpdateError> {
         if let Ok(config) = self.config_input.next() {
@@ -90,7 +102,7 @@ fn input_output_test() -> Result<(), UpdateError> {
                                          [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
     let dataset: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = Dataset::from(test_input.clone());
-    let mut and: TsneNode<> = TsneNode::new(Some(&change_observer));
+    let mut and: TsneNode<f64> = TsneNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.input.send(dataset)?;
