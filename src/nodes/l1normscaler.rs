@@ -8,15 +8,21 @@ use serde::{Deserialize, Serialize};
 use linfa::prelude::*;
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct L1NormscalerNode { 
+pub struct L1NormscalerNode<T>
+where
+    T: Clone,
+{
     #[output]
-    pub output: Output<DatasetBase<Array2<f64>, Array1<()>>>, 
+    pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>, 
+    pub input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 }
 
-impl L1NormscalerNode {
+impl<T> L1NormscalerNode<T> 
+where
+    T: Clone,
+{
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
@@ -25,7 +31,10 @@ impl L1NormscalerNode {
     }
 }
 
-impl Node for L1NormscalerNode {
+impl<T> Node for L1NormscalerNode<T>
+where
+{
+    T: Clone + Send + linfa::Float,
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(node_data) = self.input.next() {
@@ -52,7 +61,7 @@ fn input_output_test() -> Result<(), UpdateError> {
 
     let dataset = Dataset::from(test_input.clone());
 
-    let mut and: L1NormscalerNode<> = L1NormscalerNode::new(Some(&change_observer));
+    let mut and: L1NormscalerNode<f64> = L1NormscalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.input.send(dataset)?;

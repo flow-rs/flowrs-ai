@@ -26,20 +26,24 @@ impl KmeansConfig {
 }
 
 #[derive(RuntimeConnectable)]
-pub struct KmeansNode {
+pub struct KmeansNode<T>
+where
+    T: Clone,
+{
     #[input]
     pub config_input: Input<KmeansConfig>,
 
     #[output]
-    pub output: Output<DatasetBase<Array2<f64>, Array1<usize>>>,
+    pub output: Output<DatasetBase<Array2<T>, Array1<usize>>>,
 
     #[input]
-    pub input: Input<DatasetBase<Array2<f64>, Array1<()>>>, 
-
-    config: KmeansConfig
+    pub input: Input<DatasetBase<Array2<T>, Array1<()>>>, 
 }
 
-impl KmeansNode {
+impl<T> KmeansNode<T> 
+where
+    T: Clone,
+{
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
@@ -50,7 +54,7 @@ impl KmeansNode {
     }
 }
 
-impl Node for KmeansNode {
+impl Node for KmeansNode<f64> {
     fn on_update(&mut self) -> Result<(), UpdateError> {
         println!("JW-Debug: KmeansNode has received an update!");
 
@@ -107,7 +111,7 @@ fn new_config_test() -> Result<(), UpdateError> {
 
     let input_data = DatasetBase::from(record_input.clone());
 
-    let mut and: KmeansNode<> = KmeansNode::new(Some(&change_observer));
+    let mut and: KmeansNode<f64> = KmeansNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.input.send(input_data)?;

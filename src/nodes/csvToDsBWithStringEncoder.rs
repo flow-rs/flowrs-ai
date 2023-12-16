@@ -4,7 +4,7 @@
 
 use linfa::dataset::{DatasetBase, Float, Labels, Records};
 use linfa_kernel::Inner;
-use ndarray::{array, ArrayBase, OwnedRepr, Dim, Axis, Array1, Array2};
+use ndarray::{array, ArrayBase, OwnedRepr, Dim, Axis, Array1, Array2, s, concatenate};
 use csv::ReaderBuilder;
 use ndarray_csv::Array2Reader;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
@@ -126,36 +126,42 @@ pub struct CSVToEncodedDatasetBaseConfig {
                     }
                 }
 
+                let mut label_encoded_ordinals: Vec<Vec<f64>> = Vec::new();
+                for ordinal in ordinal_data.iter() {
+                    label_encoded_ordinals.push(label_encode(&ordinal));
+                }
+
+                // Example usage:
+                let mut one_hot_encoded_nominals: Vec<Array2<f64>> = Vec::new();
+                let mut one_hot_feature_names: Vec<String> = Vec::new();
+
+                // Assuming `nominal_data` and `config.nominals` are defined somewhere
+                for (nominal, feature_name) in nominal_data.iter().zip(config.nominals.iter()) {
+                    let (one_hot_encoding, feature_names) = one_hot_encode(nominal, feature_name.to_string());
+                    one_hot_encoded_nominals.push(one_hot_encoding);
+                    one_hot_feature_names.extend(feature_names);
+                }
+
                 // Converting Data to ndarrays:
-                let nominal_records: Array2<String> = Array2::from_shape_vec((nominal_data.len(), headers.len()), nominal_data.into_iter().flatten().collect()).unwrap();
-                let ordinal_records: Array2<String> = Array2::from_shape_vec((ordinal_data.len(), headers.len()), ordinal_data.into_iter().flatten().collect()).unwrap();
+                let nominal_records: Array2<f64> = concatenate_arrays(one_hot_encoded_nominals);
+                let ordinal_records: Array2<f64> = Array2::from_shape_vec((label_encoded_ordinals.len(), headers.len()), label_encoded_ordinals.into_iter().flatten().collect()).unwrap();
                 let other_records: Array2<f64> = Array2::from_shape_vec((other_data.len(), headers.len()), other_data.into_iter().flatten().collect()).unwrap();
-                                
-                // Label Encoding ordinal records
-                //let label_encoded_ordinals = label_encode_ordinal(&ordinal_records);
 
-                // One hot encoding nominal_records
-                let (one_hot_encoded_nominals, nominal_feature_names) = one_hot_encode(&nominal_records);
-                println!("nominal features: {:?}", nominal_feature_names);
-                println!("One hot encoding: {:?}", one_hot_encoded_nominals);
+                let combined_records = concatenate![
+                    Axis(0),
+                    nominal_records.view(),
+                    ordinal_records.view(),
+                    other_records.view()
+                ];
 
-                // Converting ndarrays to DatasetBase
-                let nominals_dbs:DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(one_hot_encoded_nominals.clone());
-                let nominals:DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = nominals_dbs.with_feature_names(nominal_feature_names);
-                //let ordinals_dbs:DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(label_encoded_ordinals.clone());
-                //let ordinals:DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = ordinals_dbs.with_feature_names(config.ordinals);
-                let others_dbs:DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(other_records.clone());
-                let others = others_dbs.with_feature_names(config.others);
+                let mut combined_feature_names: Vec<String> = Vec::new();
+                combined_feature_names.extend(one_hot_feature_names);
+                combined_feature_names.extend(config.ordinals);
+                combined_feature_names.extend(config.others);
 
-                println!("Nominals: {:?}", nominals);
-                println!("Ordinal records: {:?}", ordinal_records);
-                //println!("Ordinals: {:?}", ordinals);
-                println!("Others: {:?}", others);
+                let encoded_dataset = DatasetBase::from(combined_records).with_feature_names(combined_feature_names);
 
-                //let nominal_dataset:DatasetBase<_, _> = DatasetBase::from(nominal_records);
-                //let other_dataset: DatasetBase<f64, f64> = DatasetBase::from(Records::new(other_records, None));
-
-
+                println!("Encoded dataset: {:?}", encoded_dataset);
 
                 //////////////////////////////////////////////////////////////////////////////
 
@@ -176,7 +182,7 @@ pub struct CSVToEncodedDatasetBaseConfig {
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let test_data_input = String::from("Feate1,Feature2,Feature3,F4,F5,F6\n1,2,3,1,2,3\n4,5,6,1,2,3\n7,8,9,1,2,3\n10,8,9,1,2,3\n12,8,9,1,2,3\n7,8,9,1,2,3");
+    let test_data_input = String::from("Feate1,Feature2,Feature3,F4,F5,F6\n1,2,3,1,2,11\n4,5,6,1,5,3\n7,8,9,1,2,3\n10,8,9,1,6,4\n12,8,9,1,2,3\n7,8,9,1,2,3");
     let test_config_input = CSVToEncodedDatasetBaseConfig{
         separator: b',',
         has_feature_names: true,
@@ -192,79 +198,84 @@ fn input_output_test() -> Result<(), UpdateError> {
 //     and.config_input.send(test_config_input)?;
 //     and.on_update()?;
 
-    let expected: Array2<u32> = array![[1, 2, 3, 1, 2, 3], [4, 5, 6, 1, 2, 3], [7, 8, 9, 1, 2, 3], [10, 8, 9, 1, 2, 3], [12, 8, 9, 1, 2, 3], [7, 8, 9, 1, 2, 3]];
+    let expected: Array2<u32> = array![[1, 2, 3, 1, 2, 11], [4, 5, 6, 1, 5, 3], [7, 8, 9, 1, 2, 3], [10, 8, 9, 1, 6, 4], [12, 8, 9, 1, 2, 3], [7, 8, 9, 1, 2, 3]];
     let actual: Array2<u32> = mock_output.next()?.records;
     
     Ok(assert!(expected == actual))
 }
 
-fn label_encode_ordinal(records: &Array2<String>) -> Array2<f64> {
-    let mut encoded_data = Vec::new();
-    let mut label_mappings: Vec<HashMap<String, usize>> = Vec::new();
+fn label_encode(input: &Vec<String>) -> Vec<f64> {
+    // Create a HashMap to store the mapping of unique strings to labels
+    let mut label_mapping: HashMap<&String, f64> = HashMap::new();
 
-    for col_idx in 0..records.shape()[1] {
-        let mut label_mapping = HashMap::new();
-        let mut encoded_column = Vec::new();
+    // Assign labels to unique strings
+    let mut label_counter = 0.0;
+    let labels: Vec<f64> = input
+        .iter()
+        .map(|s| {
+            *label_mapping.entry(s).or_insert_with(|| {
+                let label = label_counter;
+                label_counter += 1.0;
+                label
+            })
+        })
+        .collect();
 
-        for value in records.column(col_idx).iter() {
-            let len_before_insert = label_mapping.len();
-            let label = *label_mapping
-                .entry(value.clone())
-                .or_insert_with(|| len_before_insert);
-
-            encoded_column.push(label as f64);
-        }
-
-        label_mappings.push(label_mapping);
-        encoded_data.push(encoded_column);
-    }
-
-    let rows = records.shape()[0];
-    let cols = records.shape()[1];
-    let encoded_data: Vec<Vec<f64>> = encoded_data;
-
-    Array2::from_shape_vec((rows, cols), encoded_data.into_iter().flatten().collect()).unwrap()
+    labels
 }
 
+fn one_hot_encode(input: &Vec<String>, feature_name: String) -> (Array2<f64>, Vec<String>) {
+    // Create a HashMap to store the mapping of unique strings to column indices
+    let mut column_mapping: HashMap<&String, usize> = HashMap::new();
 
-fn one_hot_encode(records: &Array2<String>) -> (Array2<f64>, Vec<String>) {
-    let mut encoded_data: Vec<Vec<f64>> = Vec::new();
+    // Assign column indices to unique strings
+    let mut column_counter = 0;
     let mut feature_names = Vec::new();
-    let mut label_mappings: Vec<HashMap<String, usize>> = Vec::new();
-
-    for col_idx in 0..records.shape()[1] {
-        let mut label_mapping = HashMap::new();
-        let mut encoded_column = Vec::new();
-
-        for value in records.column(col_idx).iter() {
-            let label = *label_mapping
-                .entry(value.clone())
-                .or_insert_with(|| label_mapping.len());
-
-            encoded_column.push(label as f64);
-        }
-
-        label_mappings.push(label_mapping);
-
-        // Append feature names for the one-hot encoded column
-        let column_name = format!("{}_one_hot", col_idx);
-        feature_names.push(column_name);
-    }
-
-    // Create a sparse one-hot encoded array
-    let rows = records.shape()[0];
-    let cols = label_mappings.iter().map(|map| map.len()).sum();
-    let mut encoded_array = Array2::zeros((rows, cols));
-
-    for (col_idx, label_mapping) in label_mappings.iter().enumerate() {
-        for (row_idx, label) in records.column(col_idx).iter().zip(encoded_array.axis_iter_mut(Axis(0))) {
-            label_mapping.iter().for_each(|(&value, &encoded_label)| {
-                if label[0] == encoded_label as f64 {
-                    label.iter_mut().for_each(|x| *x = 1.0);
-                }
-            });
+    for s in input.iter() {
+        if !column_mapping.contains_key(s) {
+            column_mapping.insert(s, column_counter);
+            let full_feature_name = format!("{}_{}", feature_name, s);
+            feature_names.push(full_feature_name);
+            column_counter += 1;
         }
     }
 
-    (encoded_array, feature_names)
+    // Create a sparse one-hot encoding matrix
+    let rows = input.len();
+    let cols = column_counter;
+    let mut encoding: ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>> = Array2::zeros((rows, cols));
+
+    for (row_idx, s) in input.iter().enumerate() {
+        if let Some(&col_idx) = column_mapping.get(s) {
+            encoding[[row_idx, col_idx]] = 1.0;
+        }
+    }
+
+    (encoding, feature_names)
+}
+
+fn concatenate_arrays(arrays: Vec<Array2<f64>>) -> Array2<f64> {
+    // Check if the vector is not empty
+    if arrays.is_empty() {
+        panic!("Input vector is empty");
+    }
+
+    // Get the shape of the first array
+    let (rows, cols) = (arrays[0].shape()[0], arrays.iter().map(|arr| arr.shape()[1]).sum());
+
+    // Create a new Array2 to hold the concatenated data
+    let mut result = Array2::zeros((rows, cols));
+
+    // Iterate over the arrays and fill the result array
+    for (col_index, array) in arrays.iter().flat_map(|arr| arr.axis_iter(Axis(1))).enumerate() {
+        // Check if the array has the same number of rows as the first one
+        if array.shape()[0] != rows {
+            panic!("Inconsistent number of rows in arrays");
+        }
+
+        // Copy the data from the current array into the result
+        result.slice_mut(s![.., col_index]).assign(&array);
+    }
+
+    result.t().to_owned()
 }
