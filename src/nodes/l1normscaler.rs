@@ -33,8 +33,8 @@ where
 
 impl<T> Node for L1NormscalerNode<T>
 where
-{
     T: Clone + Send + linfa::Float,
+{
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(node_data) = self.input.next() {

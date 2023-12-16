@@ -35,7 +35,7 @@ where
     pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub dataset_input: Input<DatasetBase<Array2<T>, Array1<()>>>
+    pub dataset_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
     config: PCAConfig
 }

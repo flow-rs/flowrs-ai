@@ -38,6 +38,8 @@ where
 
     #[input]
     pub input: Input<DatasetBase<Array2<T>, Array1<()>>>, 
+
+    config: KmeansConfig
 }
 
 impl<T> KmeansNode<T> 
@@ -141,7 +143,7 @@ fn default_config_test() -> Result<(), UpdateError> {
 
     let input_data = DatasetBase::from(record_input.clone());
 
-    let mut and: KmeansNode<> = KmeansNode::new(Some(&change_observer));
+    let mut and: KmeansNode<f64> = KmeansNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.input.send(input_data)?;

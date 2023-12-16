@@ -17,8 +17,11 @@ where
    pub max: T
 }
 
-impl MinMaxRangeScaleConfig {
-    pub fn new(min: f64, max: f64) -> Self {
+impl<T> MinMaxRangeScaleConfig<T>
+where
+    T: linfa::Float,
+{
+    pub fn new(min: T, max: T) -> Self {
         MinMaxRangeScaleConfig {
             min,
             max,
@@ -37,7 +40,9 @@ where
     pub input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub config_input: Input<MinMaxRangeScaleConfig<T>>
+    pub config_input: Input<MinMaxRangeScaleConfig<T>>,
+
+    config: MinMaxRangeScaleConfig<T>
 }
 
 impl<T> MinMaxRangeScaleNode<T> 
@@ -45,11 +50,15 @@ where
     T: Clone + linfa::Float,
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
+        let min: T = T::from(0.0).unwrap();
+        let max: T = T::from(1.0).unwrap();
+
+
         Self {
             output: Output::new(change_observer),
             input: Input::new(),
             config_input: Input::new(),
-            config: MinMaxRangeScaleConfig::new(0.0, 1.0)
+            config: MinMaxRangeScaleConfig::new(min, max)
 
         }
     }
@@ -142,7 +151,7 @@ fn default_config_test() -> Result<(), UpdateError> {
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
     let dataset = Dataset::from(test_input.clone());
 
-    let mut test_node: MinMaxRangeScaleNode<> = MinMaxRangeScaleNode::new(Some(&change_observer));
+    let mut test_node: MinMaxRangeScaleNode<f64> = MinMaxRangeScaleNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
     test_node.input.send(dataset)?;

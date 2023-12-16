@@ -54,7 +54,7 @@ fn my_test() {
 
     let csv2datasetbase_node: CSVToDatasetBaseNode<f64> = CSVToDatasetBaseNode::new(Some(&change_observer));
 
-    let maxabsscaler_node: MaxAbsScleNode<> = MaxAbsScleNode::new(Some(&change_observer));
+    let maxabsscaler_node: MaxAbsScleNode<f64> = MaxAbsScleNode::new(Some(&change_observer));
 
     // let diffusionmap_node: DiffusionMapNode<> = DiffusionMapNode::new(Some(&change_observer));
     // let dbscan_node: DbscanNode<> = DbscanNode::new(Some(&change_observer));
@@ -134,11 +134,11 @@ fn csv_array_dataset_standard_diffmap_dbscan() {
         Some(&change_observer),
     );
 
-    let csv2arrayn_node: CSVToArrayNNode<> = CSVToArrayNNode::new(Some(&change_observer));
+    let csv2arrayn_node: CSVToArrayNNode<f64> = CSVToArrayNNode::new(Some(&change_observer));
     let convertndarray2datasetbase: ConvertNdarray2DatasetBase<> = ConvertNdarray2DatasetBase::new(Some(&change_observer));
-    let standardscale_node: StandardscaleNode<> = StandardscaleNode::new(Some(&change_observer));
-    let diffusionmap_node: DiffusionMapNode<> = DiffusionMapNode::new(Some(&change_observer));
-    let dbscan_node: DbscanNode<> = DbscanNode::new(Some(&change_observer));
+    let standardscale_node: StandardscaleNode<f64> = StandardscaleNode::new(Some(&change_observer));
+    let diffusionmap_node: DiffusionMapNode<f64> = DiffusionMapNode::new(Some(&change_observer));
+    let dbscan_node: DbscanNode<f64> = DbscanNode::new(Some(&change_observer));
     let debug_node = DebugNode::<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<Option<usize>>, Dim<[usize; 1]>>>>::new(Some(&change_observer));
     //let mock_ouput = Edge::new();
     
@@ -205,11 +205,11 @@ fn csv_array_dataset_l1_pca_kmeans() {
         Some(&change_observer),
     );
 
-    let csv2arrayn_node: CSVToArrayNNode<> = CSVToArrayNNode::new(Some(&change_observer));
+    let csv2arrayn_node: CSVToArrayNNode<f64> = CSVToArrayNNode::new(Some(&change_observer));
     let convertndarray2datasetbase: ConvertNdarray2DatasetBase<> = ConvertNdarray2DatasetBase::new(Some(&change_observer));
-    let l1_node: L1NormscalerNode<> = L1NormscalerNode::new(Some(&change_observer));
-    let pca_node: PCANode<> = PCANode::new(Some(&change_observer));
-    let kmeans_node: KmeansNode<> = KmeansNode::new(Some(&change_observer));
+    let l1_node: L1NormscalerNode<f64> = L1NormscalerNode::new(Some(&change_observer));
+    let pca_node: PCANode<f64> = PCANode::new(Some(&change_observer));
+    let kmeans_node: KmeansNode<f64> = KmeansNode::new(Some(&change_observer));
     let debug_node = DebugNode::<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<usize>, Dim<[usize; 1]>>>>::new(Some(&change_observer));
 
     // Connections

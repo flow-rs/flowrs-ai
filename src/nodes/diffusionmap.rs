@@ -39,8 +39,9 @@ where
     config: DiffusionMapConfig
 }
 
+
+impl<T> DiffusionMapNode<T>
 where
-impl<T> DiffusionMapNode<T> 
     T: Clone,
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
@@ -91,33 +92,36 @@ impl Node for DiffusionMapNode<f32> {
 
 impl Node for DiffusionMapNode<f64> {
     fn on_update(&mut self) -> Result<(), UpdateError> {
+        println!("JW-Debug: DiffusionMapNode has received an update!");
 
+        // Neue Config kommt an
+        if let Ok(config) = self.config_input.next() {
+            println!("JW-Debug: DbscanNode has received config: {}, {}", config.embedding_size, config.steps);
+
+            self.config = config;
+        }
+
+        // Daten kommen an
         if let Ok(node_data) = self.input.next() {
-            println!("JW-Debug DiffusionMapNode has received: {}.", node_data.records);
+            println!("JW-Debug: DiffusionMapNode has received an update!");     //println!("JW-Debug DiffusionMapNode has received: {}.", node_data.records);
 
             let kernel = Kernel::params()
-                .kind(KernelType::Sparse(3))
-                .method(KernelMethod::Gaussian(2.0))
-                .transform(node_data.records.view());
+            .kind(KernelType::Sparse(3))
+            .method(KernelMethod::Gaussian(2.0))
+            .transform(node_data.records.view());
 
-            if let Ok(config) = self.config_input.next() {
-                println!("JW-Debug DiffusionMapNode has received config.");
+            let mapped_kernel = DiffusionMap::<f32>::params(self.config.embedding_size)
+            .steps(self.config.steps)
+            .transform(&kernel)
+            .unwrap();
 
-                let mapped_kernel = DiffusionMap::<f64>::params(config.embedding_size)
-                .steps(config.steps)
-                .transform(&kernel)
-                .unwrap();
+            let embedding = mapped_kernel.embedding();
+            let embedding_result = DatasetBase::from(embedding.clone());
 
-                let embedding = mapped_kernel.embedding();
-
-                let myoutput = DatasetBase::from(embedding.clone());
-
-                self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
-
-            } else {
-                //Err(UpdateError::Other(anyhow::Error::msg("No config received!")));
-            }   
+            self.output.send(embedding_result).map_err(|e| UpdateError::Other(e.into()))?;
+            println!("JW-Debug: DiffusionMapNode has sent an output!");
         }
+
         Ok(())
     }
 }
@@ -183,7 +187,7 @@ fn default_config_test() -> Result<(), UpdateError> {
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
     let test_dataset = Dataset::from(test_input.clone());
 
-    let mut test_node: DiffusionMapNode<> = DiffusionMapNode::new(Some(&change_observer));
+    let mut test_node: DiffusionMapNode<f64> = DiffusionMapNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
     test_node.input.send(test_dataset)?;

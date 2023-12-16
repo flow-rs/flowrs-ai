@@ -10,17 +10,22 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Deserialize, Serialize)]
 pub struct DbscanConfig<T>
 where
-    T: linfa::Float
+    T: linfa::Float,
 {
     pub min_points: usize,
     pub tolerance: T
 }
 
-impl DbscanConfig {
-    pub fn new(min_points: usize, tolerance: f64) -> Self {
+impl<T> DbscanConfig<T>
+where
+    T: Clone + linfa::Float
+{
+pub fn new(min_points: usize, tolerance: T) -> Self {
+        let tol: T = T::from(tolerance).unwrap();
+
         DbscanConfig {
-            min_points,
-            tolerance,
+            min_points: min_points,
+            tolerance: tol,
         }
     }
 }
@@ -39,8 +44,7 @@ where
     #[input]
     pub dataset_input: Input<DatasetBase<Array2<T>, Array1<()>>>, 
 
-    input_dataset: Option<DatasetBase<Array2<T>, Array1<()>>>,
-    config: DbscanConfig
+    config: DbscanConfig<T>
 }
 
 impl<T> DbscanNode<T> 
@@ -48,11 +52,13 @@ where
     T: Clone + linfa::Float,
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
+        let default_tolerance: T = T::from(0.5).unwrap();
+
         Self {
             config_input: Input::new(),
             dataset_input: Input::new(),
             output: Output::new(change_observer),
-            config: DbscanConfig::new(2, 0.5)
+            config: DbscanConfig::new(2, default_tolerance)
         }
     }
 }
@@ -136,7 +142,7 @@ fn default_config_test() -> Result<(), UpdateError> {
     [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
     let input_data = DatasetBase::from(record_input);
 
-    let mut and: DbscanNode<> = DbscanNode::new(Some(&change_observer));
+    let mut and: DbscanNode<f64> = DbscanNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.dataset_input.send(input_data)?;

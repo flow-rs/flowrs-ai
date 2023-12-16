@@ -17,8 +17,11 @@ where
    pub approx_threshold: T,
 }  
 
-impl TsneConfig {
-    pub fn new(embedding_size: usize, perplexity: f64, approx_threshold: f64) -> Self {
+impl<T> TsneConfig<T>
+where 
+T: Clone + linfa::Float,
+{
+    pub fn new(embedding_size: usize, perplexity: T, approx_threshold: T) -> Self {
         TsneConfig {
             embedding_size,
             perplexity,
@@ -39,7 +42,7 @@ where
     pub input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub config_input: Input<TsneConfig<T>>
+    pub config_input: Input<TsneConfig<T>>,
     
     config: TsneConfig<T>
 }
@@ -49,11 +52,14 @@ where
     T: Clone + linfa::Float,
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
+        let perplexity: T = T::from(1.0).unwrap();
+        let approx_threshold: T = T::from(0.1).unwrap();
+
         Self {
             output: Output::new(change_observer),
             input: Input::new(),
             config_input: Input::new(),
-            config: TsneConfig::new(2, 1.0, 0.1)
+            config: TsneConfig::new(2, perplexity, approx_threshold)
         }
     }
 }
@@ -142,7 +148,7 @@ fn default_config_test() -> Result<(), UpdateError> {
                                          [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
     let dataset: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = Dataset::from(test_input.clone());
-    let mut and: TsneNode<> = TsneNode::new(Some(&change_observer));
+    let mut and: TsneNode<f64> = TsneNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.input.send(dataset)?;
