@@ -2,13 +2,13 @@ use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Outp
 use flowrs::RuntimeConnectable;
 
 use linfa::prelude::*;
-use ndarray::{prelude::*, OwnedRepr};
+use ndarray::{prelude::*};
 use linfa::traits::{Fit, Predict};
 use linfa_clustering::KMeans;
 use serde::{Deserialize, Serialize};
 
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct KmeansConfig <T>
 where
     T: Clone + Float
@@ -33,7 +33,7 @@ where
 }
 
 
-#[derive(RuntimeConnectable)]
+#[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct KmeansNode<T>
 where
     T: Clone + Float

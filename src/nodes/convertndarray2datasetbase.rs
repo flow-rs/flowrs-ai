@@ -1,7 +1,7 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::{Array2, array, OwnedRepr};
+use ndarray::{Array2, array};
 use ndarray::prelude::*;
 use serde::{Deserialize, Serialize};
 use linfa::prelude::*;
@@ -62,7 +62,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     test_node.data_input.send(test_input.clone())?;
     test_node.on_update()?;
 
-    let actual: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = mock_output.next()?;
+    let actual= mock_output.next()?;
     let expected: Array2<f64> = array![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
 
     Ok(assert!(expected == actual.records))

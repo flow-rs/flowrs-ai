@@ -10,7 +10,7 @@ use linfa::traits::{Fit, Predict};
 use serde::{Deserialize, Serialize};
 
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct PCAConfig {
    pub embedding_size: usize
 }
@@ -25,7 +25,7 @@ impl PCAConfig {
 }
 
 
-#[derive(RuntimeConnectable)]
+#[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct PCANode<T> 
 where
     T: Clone

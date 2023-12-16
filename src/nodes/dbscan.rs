@@ -31,7 +31,7 @@ pub fn new(min_points: usize, tolerance: T) -> Self {
 }
 
 
-#[derive(RuntimeConnectable)]
+#[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct DbscanNode<T> 
 where
     T: Clone + Float
