@@ -5,20 +5,26 @@ use ndarray::array;
 use ndarray::Array2;
 use csv::ReaderBuilder;
 use ndarray_csv::Array2Reader;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct CSVToArrayNNode {
+pub struct CSVToArrayNNode<T> 
+where
+    T: Clone,
+{
     #[output]
-    pub output: Output<Array2<f64>>,
+    pub output: Output<Array2<T>>,
 
     #[input]
     pub input: Input<String>,
 }
 
-impl CSVToArrayNNode {
+impl<T> CSVToArrayNNode<T> 
+where
+    T: Clone,
+{
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
@@ -27,7 +33,10 @@ impl CSVToArrayNNode {
     }
 }
 
-impl Node for CSVToArrayNNode {
+impl<T> Node for CSVToArrayNNode<T> 
+where
+    T: Clone + Send + DeserializeOwned,
+{
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(data) = self.input.next() {
@@ -38,7 +47,7 @@ impl Node for CSVToArrayNNode {
 
             // convert String to ndarray
             let mut reader = ReaderBuilder::new().has_headers(has_feature_names).from_reader(data.as_bytes());
-            let data_ndarray: Array2<f64> = reader.deserialize_array2_dynamic().map_err(|e| UpdateError::Other(e.into()))?;
+            let data_ndarray = reader.deserialize_array2_dynamic().map_err(|e| UpdateError::Other(e.into()))?;
             
             // debug
             //println!("Ndarray: {}", data_ndarray);
@@ -54,7 +63,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
     let test_input = String::from("Feature1,Feature2,Feature3\n1,2,3\n4,5,6\n7,8,9");
 
-    let mut and: CSVToArrayNNode<> = CSVToArrayNNode::new(Some(&change_observer));
+    let mut and: CSVToArrayNNode<f64> = CSVToArrayNNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.input.send(test_input)?;
