@@ -185,3 +185,57 @@ fn default_config_test() -> Result<(), UpdateError> {
 
     Ok(assert!(expected == actual))
 }
+
+
+#[test]
+fn test_f32() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: DiffusionMapNode<f32> = DiffusionMapNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let test_data_input = DatasetBase::from(test_data);
+
+    node.data_input.send(test_data_input)?;
+    node.on_update()?;
+
+    let expected = array![[0.6275492, -0.7063889],
+    [0.45945868, -0.00034947725],
+    [0.6275539, 0.7066395],
+    [0.0000023390774, 0.000002633851]];
+
+    let actual = mock_output.next()?.records;
+    
+    Ok(assert!(expected == actual))
+}
+
+
+#[test]
+fn test_f64() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: DiffusionMapNode<f64> = DiffusionMapNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let test_data_input = DatasetBase::from(test_data);
+
+    node.data_input.send(test_data_input)?;
+    node.on_update()?;
+
+    let expected = array![[-0.6277633197008474, 0.7062768225572112],
+    [-0.45945581589841195, -0.0000003562607586318781],
+    [-0.6273416245953961, -0.7067513162800128],
+    [0.0000015990652143251083, 0.00000017822446319792776]];
+
+    let actual = mock_output.next()?.records;
+
+    Ok(assert!(expected == actual))
+}

@@ -80,3 +80,57 @@ fn input_output_test() -> Result<(), UpdateError> {
 
     Ok(assert!(expected.records == actual.records))
 }
+
+
+#[test]
+fn test_f32() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: L2NormscalerNode<f32> = L2NormscalerNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let test_data_input = DatasetBase::from(test_data);
+
+    node.data_input.send(test_data_input)?;
+    node.on_update()?;
+
+    let expected = array![[0.1, 0.2, 0.3, 0.4],
+    [0.16666666666666666, 0.2222222222222222, 0.2777777777777778, 0.3333333333333333],
+    [0.19230769230769232, 0.23076923076923078, 0.2692307692307692, 0.3076923076923077],
+    [0.3333333333333333, 0.19047619047619047, 0.047619047619047616, 0.42857142857142855]];
+
+    let actual = mock_output.next()?.records;
+
+    Ok(assert!(expected == actual))
+}
+
+
+#[test]
+fn test_f64() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: L2NormscalerNode<f64> = L2NormscalerNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let test_data_input = DatasetBase::from(test_data);
+
+    node.data_input.send(test_data_input)?;
+    node.on_update()?;
+
+    let expected = array![[0.1, 0.2, 0.3, 0.4],
+    [0.16666666666666666, 0.2222222222222222, 0.2777777777777778, 0.3333333333333333],
+    [0.19230769230769232, 0.23076923076923078, 0.2692307692307692, 0.3076923076923077],
+    [0.3333333333333333, 0.19047619047619047, 0.047619047619047616, 0.42857142857142855]];
+
+    let actual = mock_output.next()?.records;
+
+    Ok(assert!(expected == actual))
+}

@@ -92,3 +92,57 @@ fn input_output_test() -> Result<(), UpdateError> {
 
     Ok(assert!(expected.records == actual.records))
 }
+
+
+#[test]
+fn test_f32() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: MaxAbsScleNode<f32> = MaxAbsScleNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let test_data_input = DatasetBase::from(test_data);
+
+    node.data_input.send(test_data_input)?;
+    node.on_update()?;
+
+    let expected = array![[0.14285715, 0.33333334, 0.42857146, 0.44444445],
+    [0.42857146, 0.6666667, 0.71428573, 0.6666667],
+    [0.71428573, 1., 1., 0.8888889],
+    [1., 0.6666667, 0.14285715, 1.]];
+
+    let actual = mock_output.next()?.records;
+
+    Ok(assert!(expected == actual))
+}
+
+
+#[test]
+fn test_f64() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: MaxAbsScleNode<f64> = MaxAbsScleNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let test_data_input = DatasetBase::from(test_data);
+
+    node.data_input.send(test_data_input)?;
+    node.on_update()?;
+
+    let expected = array![[0.14285714285714285, 0.3333333333333333, 0.42857142857142855, 0.4444444444444444],
+    [0.42857142857142855, 0.6666666666666666, 0.7142857142857142, 0.6666666666666666],
+    [0.7142857142857142, 1., 1., 0.8888888888888888],
+    [1., 0.6666666666666666, 0.14285714285714285, 1.]];
+
+    let actual = mock_output.next()?.records;
+    
+    Ok(assert!(expected == actual))
+}

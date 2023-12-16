@@ -158,3 +158,57 @@ fn input_output_test() -> Result<(), UpdateError> {
 
     Ok(assert!(expected == actual.records))
 }
+
+
+#[test]
+fn test_f32() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: PCANode<f32> = PCANode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let test_data_input = DatasetBase::from(test_data);
+
+    node.data_input.send(test_data_input)?;
+    node.on_update()?;
+
+    let expected = array![[-4.457307, -1.3018891],
+    [-1.2156291, 1.0415113],
+    [2.0260487, 3.3849118],
+    [3.6468875, -3.124534]];
+
+    let actual = mock_output.next()?.records;
+    println!("{}", actual);
+    Ok(assert!(expected == actual))
+}
+
+
+#[test]
+fn test_f64() -> Result<(), UpdateError> {
+    let change_observer: ChangeObserver = ChangeObserver::new();
+    let mut node: PCANode<f64> = PCANode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let test_data_input = DatasetBase::from(test_data);
+
+    node.data_input.send(test_data_input)?;
+    node.on_update()?;
+
+    let expected = array![[-4.457306893827564, -1.3018891098082346],
+    [-1.215629152862062, 1.0415112878465922],
+    [2.02604858810344, 3.384911685501419],
+    [3.6468874585861863, -3.1245338635397766]];
+
+    let actual = mock_output.next()?.records;
+    
+    Ok(assert!(expected == actual))
+}

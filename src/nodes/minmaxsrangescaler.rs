@@ -175,3 +175,57 @@ fn default_config_test() -> Result<(), UpdateError> {
 
     Ok(assert!(expected.records == actual.records))
 }
+
+
+#[test]
+fn test_f32() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: MinMaxRangeScaleNode<f32> = MinMaxRangeScaleNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let test_data_input = DatasetBase::from(test_data);
+
+    node.data_input.send(test_data_input)?;
+    node.on_update()?;
+
+    let expected = array![[0., 0., 0.33333334, 0.],
+    [0.33333334, 0.5, 0.6666667, 0.4],
+    [0.6666667, 1., 1., 0.8],
+    [1., 0.5, 0., 1.]];
+
+    let actual = mock_output.next()?.records;
+
+    Ok(assert!(expected == actual))
+}
+
+
+#[test]
+fn test_f64() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: MinMaxRangeScaleNode<f64> = MinMaxRangeScaleNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let test_data_input = DatasetBase::from(test_data);
+
+    node.data_input.send(test_data_input)?;
+    node.on_update()?;
+
+    let expected = array![[0., 0., 0.3333333333333333, 0.],
+    [0.3333333333333333, 0.5, 0.6666666666666666, 0.4],
+    [0.6666666666666666, 1., 1., 0.8],
+    [1., 0.5, 0., 1.]];
+
+    let actual = mock_output.next()?.records;
+    
+    Ok(assert!(expected == actual))
+}

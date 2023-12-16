@@ -90,3 +90,57 @@ fn input_output_test() -> Result<(), UpdateError> {
 
     Ok(assert!(expected.records == actual.records))
 }
+
+
+#[test]
+fn test_f32() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: StandardscaleNode<f32> = StandardscaleNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let test_data_input = DatasetBase::from(test_data);
+
+    node.data_input.send(test_data_input)?;
+    node.on_update()?;
+
+    let expected = array![[-1.3416407, -1.4142135, -0.4472136, -1.432078],
+    [-0.4472136, 0., 0.4472136, -0.39056674],
+    [0.4472136, 1.4142135, 1.3416407, 0.6509446],
+    [1.3416407, 0., -1.3416407, 1.1717002]];
+
+    let actual = mock_output.next()?.records;
+    
+    Ok(assert!(expected == actual))
+}
+
+
+#[test]
+fn test_f64() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: StandardscaleNode<f64> = StandardscaleNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let test_data_input = DatasetBase::from(test_data);
+
+    node.data_input.send(test_data_input)?;
+    node.on_update()?;
+
+    let expected = array![[-1.3416407864998738, -1.414213562373095, -0.4472135954999579, -1.4320780207890627],
+    [-0.4472135954999579, 0., 0.4472135954999579, -0.3905667329424717],
+    [0.4472135954999579, 1.414213562373095, 1.3416407864998738, 0.6509445549041194],
+    [1.3416407864998738, 0., -1.3416407864998738, 1.171700198827415]];
+
+    let actual = mock_output.next()?.records;
+
+    Ok(assert!(expected == actual))
+}

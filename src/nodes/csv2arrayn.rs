@@ -8,6 +8,23 @@ use ndarray_csv::Array2Reader;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 
+#[derive(Clone, Deserialize, Serialize)]
+pub struct CSVToArrayNConfig {
+   pub separator: u8,
+   pub has_feature_names: bool
+}
+
+
+impl CSVToArrayNConfig {
+    pub fn new(separator: u8, has_feature_names: bool) -> Self {
+        CSVToArrayNConfig {
+            separator: separator,
+            has_feature_names: has_feature_names
+        }
+    }
+}
+
+
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct CSVToArrayNNode<T> 
 where
@@ -17,7 +34,12 @@ where
     pub output: Output<Array2<T>>,
 
     #[input]
-    pub data_input: Input<String>
+    pub data_input: Input<String>,
+
+    #[input]
+    pub config_input: Input<CSVToArrayNConfig>,
+
+    config: CSVToArrayNConfig
 }
 
 
@@ -28,7 +50,9 @@ where
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
-            data_input: Input::new()
+            data_input: Input::new(),
+            config_input: Input::new(),
+            config: CSVToArrayNConfig::new(b',', false)
         }
     }
 }
@@ -41,12 +65,18 @@ where
     fn on_update(&mut self) -> Result<(), UpdateError> {
         println!("JW-Debug: CSVToArrayNNode has received an update!");
 
+        if let Ok(config) = self.config_input.next() {
+            println!("JW-Debug: CSVToArrayNNode has received config: {}, {}", config.separator, config.has_feature_names);
+            self.config = config;
+        }
+
         if let Ok(data) = self.data_input.next() {
             println!("JW-Debug: PCANode has received data!");
 
-            let has_feature_names = true;
-
-            let mut reader = ReaderBuilder::new().has_headers(has_feature_names).from_reader(data.as_bytes());
+            let mut reader = ReaderBuilder::new()
+                .delimiter(self.config.separator)
+                .has_headers(self.config.has_feature_names)
+                .from_reader(data.as_bytes());
             let data_ndarray = reader.deserialize_array2_dynamic().map_err(|e| UpdateError::Other(e.into()))?;
 
             self.output.send(data_ndarray).map_err(|e| UpdateError::Other(e.into()))?;
@@ -69,6 +99,50 @@ fn input_output_test() -> Result<(), UpdateError> {
 
     let expected: Array2<f64> = array![[1., 2., 3.], [4., 5., 6.], [7., 8., 9.]];
     let actual: Array2<f64> = mock_output.next()?;
+
+    Ok(assert!(expected == actual))
+}
+
+
+#[test]
+fn test_f32() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: CSVToArrayNNode<f32> = CSVToArrayNNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data_input = String::from("1,2,3,4\n3,4,5,6\n5,6,7,8\n7,4,1,9");
+
+    node.data_input.send(test_data_input.clone())?;
+    node.on_update()?;
+
+    let expected = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let actual = mock_output.next()?;
+
+    Ok(assert!(expected == actual))
+}
+
+
+#[test]
+fn test_f64() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: CSVToArrayNNode<f64> = CSVToArrayNNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data_input = String::from("1,2,3,4\n3,4,5,6\n5,6,7,8\n7,4,1,9");
+
+    node.data_input.send(test_data_input.clone())?;
+    node.on_update()?;
+
+    let expected = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let actual = mock_output.next()?;
 
     Ok(assert!(expected == actual))
 }

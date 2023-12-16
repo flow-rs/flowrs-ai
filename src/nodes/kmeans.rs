@@ -170,3 +170,55 @@ fn default_config_test() -> Result<(), UpdateError> {
 
     Ok(assert!(expected == actual.targets()))
 }
+
+
+#[test]
+fn test_f32() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: KmeansNode<f32> = KmeansNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let test_data_input = DatasetBase::from(test_data.clone());
+
+    node.data_input.send(test_data_input)?;
+    node.on_update()?;
+
+    let expected_targets = array![1, 0, 0, 2];
+
+    let actual = mock_output.next()?;
+    let actual_records = actual.records;
+    let actual_targets = actual.targets;
+
+    Ok(assert!((test_data == actual_records) && (expected_targets == actual_targets)))
+}
+
+
+#[test]
+fn test_f64() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: KmeansNode<f64> = KmeansNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+    let test_data_input = DatasetBase::from(test_data.clone());
+
+    node.data_input.send(test_data_input)?;
+    node.on_update()?;
+
+    let expected_targets = array![1, 0, 0, 2];
+
+    let actual = mock_output.next()?;
+    let actual_records = actual.records;
+    let actual_targets = actual.targets;
+
+    Ok(assert!((test_data == actual_records) && (expected_targets == actual_targets)))
+}

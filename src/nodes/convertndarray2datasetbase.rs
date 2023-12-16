@@ -67,3 +67,45 @@ fn input_output_test() -> Result<(), UpdateError> {
 
     Ok(assert!(expected == actual.records))
 }
+
+
+#[test]
+fn test_f32() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: ConvertNdarray2DatasetBase<f32> = ConvertNdarray2DatasetBase::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data_input = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+
+    node.data_input.send(test_data_input.clone())?;
+    node.on_update()?;
+
+    let actual = mock_output.next()?.records;
+
+    Ok(assert!(test_data_input == actual))
+}
+
+
+#[test]
+fn test_f64() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+    let mut node: ConvertNdarray2DatasetBase<f64> = ConvertNdarray2DatasetBase::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(node.output.clone(), mock_output.clone());
+
+    let test_data_input = array![[1.0, 2.0, 3.0, 4.0],
+    [3.0, 4.0, 5.0, 6.0],
+    [5.0, 6.0, 7.0, 8.0],
+    [7.0, 4.0, 1.0, 9.0]];
+
+    node.data_input.send(test_data_input.clone())?;
+    node.on_update()?;
+
+    let actual = mock_output.next()?.records;
+
+    Ok(assert!(test_data_input == actual))
+}
