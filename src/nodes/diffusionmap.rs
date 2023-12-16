@@ -2,7 +2,7 @@ use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Outp
 use flowrs::RuntimeConnectable;
 
 use ndarray::prelude::*;
-use linfa::{traits::Transformer, DatasetBase, Dataset};
+use linfa::{traits::Transformer, DatasetBase, Dataset, Float};
 use linfa_kernel::{Kernel, KernelType, KernelMethod};
 use linfa_reduction::DiffusionMap;
 use serde::{Deserialize, Serialize};
@@ -54,7 +54,11 @@ where
     }
 }
 
-impl Node for DiffusionMapNode<f32> {
+
+impl<T> Node for DiffusionMapNode<T> 
+where
+    T: Clone + Send + Float
+{
     fn on_update(&mut self) -> Result<(), UpdateError> {
         println!("JW-Debug: DiffusionMapNode has received an update!");
 
@@ -68,46 +72,11 @@ impl Node for DiffusionMapNode<f32> {
         // Daten kommen an
         if let Ok(node_data) = self.input.next() {
             println!("JW-Debug: DiffusionMapNode has received an update!");     //println!("JW-Debug DiffusionMapNode has received: {}.", node_data.records);
-
+            
+            let gaussian = T::from_f64(2.0).unwrap();
             let kernel = Kernel::params()
             .kind(KernelType::Sparse(3))
-            .method(KernelMethod::Gaussian(2.0))
-            .transform(node_data.records.view());
-
-            let mapped_kernel = DiffusionMap::<f64>::params(self.config.embedding_size)
-            .steps(self.config.steps)
-            .transform(&kernel)
-            .unwrap();
-
-            let embedding = mapped_kernel.embedding();
-            let embedding_result = DatasetBase::from(embedding.clone());
-
-            self.output.send(embedding_result).map_err(|e| UpdateError::Other(e.into()))?;
-            println!("JW-Debug: DiffusionMapNode has sent an output!");
-        }
-
-        Ok(())
-    }
-}
-
-impl Node for DiffusionMapNode<f64> {
-    fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: DiffusionMapNode has received an update!");
-
-        // Neue Config kommt an
-        if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: DbscanNode has received config: {}, {}", config.embedding_size, config.steps);
-
-            self.config = config;
-        }
-
-        // Daten kommen an
-        if let Ok(node_data) = self.input.next() {
-            println!("JW-Debug: DiffusionMapNode has received an update!");     //println!("JW-Debug DiffusionMapNode has received: {}.", node_data.records);
-
-            let kernel = Kernel::params()
-            .kind(KernelType::Sparse(3))
-            .method(KernelMethod::Gaussian(2.0))
+            .method(KernelMethod::Gaussian(gaussian))
             .transform(node_data.records.view());
 
             let mapped_kernel = DiffusionMap::<f32>::params(self.config.embedding_size)
