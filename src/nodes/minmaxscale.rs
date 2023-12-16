@@ -2,7 +2,7 @@ use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Outp
 use flowrs::RuntimeConnectable;
 
 use ndarray::{Array2, Array1, array, ArrayBase, OwnedRepr, Dim};
-use linfa::{dataset::DatasetBase, Dataset};
+use linfa::{dataset::DatasetBase, Dataset, Float};
 use linfa::traits::{Fit, Transformer};
 use linfa_preprocessing::linear_scaling::LinearScaler;
 use serde::{Deserialize, Serialize};
@@ -11,39 +11,41 @@ use serde::{Deserialize, Serialize};
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct MinMaxScaleNode<T> 
 where
-    T: Clone,
+    T: Clone
 {
     #[output]
     pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub input: Input<DatasetBase<Array2<T>, Array1<()>>>,
+    pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
 }
 
+
 impl<T> MinMaxScaleNode<T> 
 where
-    T: Clone,
+    T: Clone
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
-            input: Input::new()
+            data_input: Input::new()
         }
     }
 }
 
+
 impl<T> Node for MinMaxScaleNode<T> 
 where
-    T: Clone + Send + linfa::Float,
+    T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
-        if let Ok(node_data) = self.input.next() {
+        if let Ok(data) = self.data_input.next() {
         println!("JW-Debug: MinMaxScaleNode has received an update!");//println!("JW-Debug: MinMaxScaleNode has received: {}.", node_data.records);
 
-            let scaler = LinearScaler::min_max().fit(&node_data).unwrap();
-            let dataset = scaler.transform(node_data);
+            let scaler = LinearScaler::min_max().fit(&data).unwrap();
+            let dataset = scaler.transform(data);
 
             self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
             println!("JW-Debug: MinMaxScaleNode has sent an output!");
@@ -51,6 +53,7 @@ where
         Ok(())
     }
 }
+
 
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
@@ -70,7 +73,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     let mut test_node: MinMaxScaleNode<f64> = MinMaxScaleNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
-    test_node.input.send(dataset)?;
+    test_node.data_input.send(dataset)?;
     test_node.on_update()?;
 
     let expected: Array2<f64> = array![[0.00833333333333334, 0.041666666666666664, 0.01666666666666668, 0.29999999999999993, 0.26666666666666666, 0.30833333333333335],

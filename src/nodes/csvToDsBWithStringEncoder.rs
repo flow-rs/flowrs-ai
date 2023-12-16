@@ -28,7 +28,7 @@ pub struct CSVToEncodedDatasetBaseConfig {
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct CSVToEncodedDatasetBaseNode<T>
 where
-    T: Clone,
+    T: Clone
 {
     #[input]
     pub config_input: Input<CSVToEncodedDatasetBaseConfig>,
@@ -44,7 +44,7 @@ where
 
 impl<T> CSVToEncodedDatasetBaseNode<T>
 where
-    T: Clone,
+    T: Clone
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
@@ -59,7 +59,7 @@ where
 impl<T> Node for CSVToEncodedDatasetBaseNode<T>
 where
     <T as FromStr>::Err: fmt::Debug,
-    T: Clone + Send + DeserializeOwned + FromStr + linfa::Float,
+    T: Clone + Send + DeserializeOwned + FromStr + Float,
     f64: Into<T>
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
@@ -79,10 +79,6 @@ where
                                                             .has_headers(config.has_feature_names)
                                                             .from_reader(data.as_bytes());
                 let data_ndarray2: Array2<T> = reader.deserialize_array2_dynamic().map_err(|e| UpdateError::Other(e.into()))?;
-                let dataset = DatasetBase::from(data_ndarray2);
-
-
-
                 //////////////////////////////////////////////////////////////////////////////
 
                 println!("JW-Debug CSVToArrayNNode has received config.");
@@ -236,7 +232,7 @@ where
 
 fn one_hot_encode<T>(input: &Vec<String>, feature_name: String) -> (Array2<T>, Vec<String>) 
 where
-    T: Clone + linfa::Float,
+    T: Clone + Float,
     f64: Into<T>
 {
     // Create a HashMap to store the mapping of unique strings to column indices
@@ -270,7 +266,7 @@ where
 
 fn concatenate_arrays<T>(arrays: Vec<Array2<T>>) -> Array2<T> 
 where
-    T: Clone + linfa::Float
+    T: Clone + Float
 {
     // Check if the vector is not empty
     if arrays.is_empty() {

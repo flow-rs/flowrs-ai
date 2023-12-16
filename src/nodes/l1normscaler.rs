@@ -7,41 +7,44 @@ use linfa_preprocessing::norm_scaling::NormScaler;
 use serde::{Deserialize, Serialize};
 use linfa::prelude::*;
 
+
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct L1NormscalerNode<T>
 where
-    T: Clone,
+    T: Clone
 {
     #[output]
     pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub input: Input<DatasetBase<Array2<T>, Array1<()>>>,
+    pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 }
+
 
 impl<T> L1NormscalerNode<T> 
 where
-    T: Clone,
+    T: Clone
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
-            input: Input::new()
+            data_input: Input::new()
         }
     }
 }
 
+
 impl<T> Node for L1NormscalerNode<T>
 where
-    T: Clone + Send + linfa::Float,
+    T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
-        if let Ok(node_data) = self.input.next() {
+        if let Ok(data) = self.data_input.next() {
             println!("JW-Debug: L1NormscalerNode has received an update!");//println!("JW-Debug: L1NormscalerNode has received: {}.", node_data.records);
 
             let scaler = NormScaler::l1();
-            let normalized_data = scaler.transform(node_data.clone());
+            let normalized_data = scaler.transform(data);
     
             self.output.send(normalized_data).map_err(|e| UpdateError::Other(e.into()))?;
             println!("JW-Debug: L1NormscalerNode has sent an output!");
@@ -50,6 +53,7 @@ where
         Ok(())
     }
 }
+
 
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
@@ -64,7 +68,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     let mut and: L1NormscalerNode<f64> = L1NormscalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.input.send(dataset)?;
+    and.data_input.send(dataset)?;
     and.on_update()?;
 
     let expected_data = array![[0.1, 0.2, 0.3, 0.4],

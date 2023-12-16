@@ -15,6 +15,7 @@ pub struct PCAConfig {
    pub embedding_size: usize
 }
 
+
 impl PCAConfig {
     pub fn new(embedding_size: usize) -> Self {
         PCAConfig {
@@ -23,10 +24,11 @@ impl PCAConfig {
     }
 }
 
+
 #[derive(RuntimeConnectable)]
 pub struct PCANode<T> 
 where
-    T: Clone,
+    T: Clone
 {
     #[input]
     pub config_input: Input<PCAConfig>,
@@ -35,25 +37,27 @@ where
     pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub dataset_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
+    pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
     config: PCAConfig
 }
 
+
 impl<T> PCANode<T> 
 where
-    T: Clone,
+    T: Clone
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             config_input: Input::new(),
-            dataset_input: Input::new(),
+            data_input: Input::new(),
             output: Output::new(change_observer),
             config: PCAConfig::new(2)
 
         }
     }
 }
+
 
 impl Node for PCANode<f64> {
     fn on_update(&mut self) -> Result<(), UpdateError> {
@@ -67,7 +71,7 @@ impl Node for PCANode<f64> {
         }
 
         // Daten kommen an
-        if let Ok(data) = self.dataset_input.next() {
+        if let Ok(data) = self.data_input.next() {
             println!("JW-Debug: PCANode has received data!");
 
             let embedding = Pca::params(self.config.embedding_size)
@@ -83,38 +87,37 @@ impl Node for PCANode<f64> {
     }
 }
 
+
 impl Node for PCANode<f32> {
     fn on_update(&mut self) -> Result<(), UpdateError> {
+        println!("JW-Debug: PCANode has received an update!");
 
-        if let Ok(dataset) = self.dataset_input.next() {
-            println!("JW-Debug PCANode has received: {}.", dataset.records);
+        // Neue Config kommt an
+        if let Ok(config) = self.config_input.next() {
+            println!("JW-Debug: PCANode has received config: {}", config.embedding_size);
 
-            let dataset_f64 = DatasetBase::from(dataset.records.mapv(|x| x as f64));
+            self.config = config;
+        }
+
+        // Daten kommen an
+        if let Ok(data) = self.data_input.next() {
+            println!("JW-Debug: PCANode has received data!");
+
+            let data_f64 = DatasetBase::from(data.records.mapv(|x| x as f64));
+
+            let embedding = Pca::params(self.config.embedding_size)
+                .fit(&data_f64)
+                .unwrap();
+            let red_dataset = embedding.predict(data_f64);
             
-            if let Ok(config) = self.config_input.next() {
-                println!("JW-Debug PCANode has received config.");
-            
-                // parameter
-                let embedding_size = 2;
-                // pca
-                let embedding = Pca::params(embedding_size)
-                    .fit(&dataset_f64)
-                    .unwrap();
-                let red_dataset = embedding.predict(dataset_f64);
-                
-                let myoutput= DatasetBase::from(red_dataset.targets.mapv(|x| x as f32));
+            let myoutput= DatasetBase::from(red_dataset.targets.mapv(|x| x as f32));
 
-                println!("DatasetBase\n");
-                println!("Records:\n {}\n", red_dataset.records.clone());
-                println!("Targets:\n {:?}\n", red_dataset.targets.clone());
-                println!("Feature names:\n {:?}\n", red_dataset.feature_names().clone());
-
-                self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
-            }
+            self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }
 }
+
 
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
@@ -136,7 +139,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     let mut and: PCANode<f64> = PCANode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.dataset_input.send(dataset)?;
+    and.data_input.send(dataset)?;
     and.config_input.send(test_config_input)?;
     and.on_update()?;
 

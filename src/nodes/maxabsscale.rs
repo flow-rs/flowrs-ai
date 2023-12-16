@@ -2,7 +2,7 @@ use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Outp
 use flowrs::RuntimeConnectable;
 
 use ndarray::{Array2, Array1, array, ArrayBase, Dim, OwnedRepr};
-use linfa::{dataset::DatasetBase, Dataset};
+use linfa::{dataset::DatasetBase, Dataset, Float};
 use linfa::traits::{Fit, Transformer};
 use linfa_preprocessing::linear_scaling::LinearScaler;
 use serde::{Deserialize, Serialize};
@@ -17,33 +17,35 @@ where
     pub output: Output<DatasetBase<Array2<T>, Array1<()>>>, 
 
     #[input]
-    pub input: Input<DatasetBase<Array2<T>, Array1<()>>>,
+    pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
 }
 
+
 impl<T> MaxAbsScleNode<T> 
 where
-    T: Clone,
+    T: Clone
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
-            input: Input::new()
+            data_input: Input::new()
         }
     }
 }
 
+
 impl<T> Node for MaxAbsScleNode<T> 
 where
-    T: Clone + Send + linfa::Float
+    T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
-        if let Ok(dataset) = self.input.next() {
+        if let Ok(data) = self.data_input.next() {
             println!("JW-Debug: MaxAbsScalerNode has received an update!");//println!("JW-Debug: MaxAbsScalerNode has received: {}.", dataset.records);
 
-            let scaler = LinearScaler::max_abs().fit(&dataset).unwrap();
-            let dataset = scaler.transform(dataset);
+            let scaler = LinearScaler::max_abs().fit(&data).unwrap();
+            let dataset = scaler.transform(data);
 
             self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
             println!("JW-Debug: MaxAbsScalerNode has sent an output!");
@@ -52,6 +54,7 @@ where
         Ok(())
     }
 }
+
 
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
@@ -71,7 +74,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     let mut test_node: MaxAbsScleNode<f64> = MaxAbsScleNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
-    test_node.input.send(dataset)?;
+    test_node.data_input.send(dataset)?;
     test_node.on_update()?;
 
     let expected_data: Array2<f64> = array![[0.08461538461538462, 0.17857142857142855, 0.21333333333333335, 0.35384615384615387, 0.37142857142857144, 0.44666666666666666],

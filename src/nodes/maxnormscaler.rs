@@ -7,41 +7,44 @@ use linfa_preprocessing::norm_scaling::NormScaler;
 use serde::{Deserialize, Serialize};
 use linfa::prelude::*;
 
+
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct MaxNormScalerNode<T>
 where
-    T: Clone,
+    T: Clone
 {
     #[output]
     pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub input: Input<DatasetBase<Array2<T>, Array1<()>>>,
+    pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 }
+
 
 impl<T> MaxNormScalerNode<T> 
 where
-    T: Clone,
+    T: Clone
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
-            input: Input::new()
+            data_input: Input::new()
         }
     }
 }
 
+
 impl<T> Node for MaxNormScalerNode<T> 
 where
-    T: Clone + Send + linfa::Float,
+    T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
-        if let Ok(node_data) = self.input.next() {
+        if let Ok(data) = self.data_input.next() {
             println!("JW-Debug: MaxNormScalerNode has received data!"); //println!("JW-Debug: MaxNormScalerNode has received: {}.", node_data.records);
 
             let scaler = NormScaler::max();
-            let normalized_data = scaler.transform(node_data.clone());
+            let normalized_data = scaler.transform(data);
     
             self.output.send(normalized_data).map_err(|e| UpdateError::Other(e.into()))?;
             println!("JW-Debug: MaxNormScalerNode has sent an output!");
@@ -65,7 +68,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     let mut test_node: MaxNormScalerNode<f64> = MaxNormScalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
-    test_node.input.send(dataset)?;
+    test_node.data_input.send(dataset)?;
     test_node.on_update()?;
 
     let expected_data = array![[0.25, 0.5, 0.75, 1.0],

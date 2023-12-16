@@ -2,38 +2,39 @@ use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Outp
 use flowrs::RuntimeConnectable;
 
 use ndarray::{Array2, Array1, array};
-use linfa::dataset::DatasetBase;
+use linfa::{dataset::DatasetBase, Float};
 use linfa::traits::Transformer;
 use linfa_clustering::Dbscan;
 use serde::{Deserialize, Serialize};
 
+
 #[derive(Clone, Deserialize, Serialize)]
 pub struct DbscanConfig<T>
 where
-    T: linfa::Float,
+    T: Clone + Float
 {
     pub min_points: usize,
     pub tolerance: T
 }
 
+
 impl<T> DbscanConfig<T>
 where
-    T: Clone + linfa::Float
+    T: Clone + Float
 {
 pub fn new(min_points: usize, tolerance: T) -> Self {
-        let tol: T = T::from(tolerance).unwrap();
-
         DbscanConfig {
             min_points: min_points,
-            tolerance: tol,
+            tolerance: tolerance,
         }
     }
 }
 
+
 #[derive(RuntimeConnectable)]
 pub struct DbscanNode<T> 
 where
-    T: Clone + linfa::Float,
+    T: Clone + Float
 {
     #[input]
     pub config_input: Input<DbscanConfig<T>>,
@@ -42,30 +43,32 @@ where
     pub output: Output<DatasetBase<Array2<T>, Array1<Option<usize>>>>,
 
     #[input]
-    pub dataset_input: Input<DatasetBase<Array2<T>, Array1<()>>>, 
+    pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>, 
 
     config: DbscanConfig<T>
 }
 
+
 impl<T> DbscanNode<T> 
 where
-    T: Clone + linfa::Float,
+    T: Clone + Float
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         let default_tolerance: T = T::from(0.5).unwrap();
 
         Self {
             config_input: Input::new(),
-            dataset_input: Input::new(),
+            data_input: Input::new(),
             output: Output::new(change_observer),
             config: DbscanConfig::new(2, default_tolerance)
         }
     }
 }
 
+
 impl<T> Node for DbscanNode<T>
 where
-    T: Clone + Send + linfa::Float,
+    T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
         println!("JW-Debug: DbscanNode has received an update!");
@@ -78,13 +81,13 @@ where
         }
 
         // Daten kommen an
-        if let Ok(data) = self.dataset_input.next() {
+        if let Ok(data) = self.data_input.next() {
             println!("JW-Debug: DbscanNode has received data!"); //: \n Records: {} \n Targets: {}.", dataset.records, dataset.targets);
 
             let clusters = Dbscan::params(self.config.min_points)
-            .tolerance(self.config.tolerance)
-            .transform(data)
-            .unwrap();
+                .tolerance(self.config.tolerance)
+                .transform(data)
+                .unwrap();
 
             self.output.send(clusters).map_err(|e| UpdateError::Other(e.into()))?;
             println!("JW-Debug: DbscanNode has sent an output!");
@@ -117,7 +120,7 @@ fn new_config_test() -> Result<(), UpdateError> {
     let mut and: DbscanNode<f64> = DbscanNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.dataset_input.send(input_data)?;
+    and.data_input.send(input_data)?;
     and.config_input.send(test_config_input)?;
     and.on_update()?;
 
@@ -126,6 +129,7 @@ fn new_config_test() -> Result<(), UpdateError> {
 
     Ok(assert!(expected == actual.targets))
 }
+
 
 #[test]
 fn default_config_test() -> Result<(), UpdateError> {
@@ -145,7 +149,7 @@ fn default_config_test() -> Result<(), UpdateError> {
     let mut and: DbscanNode<f64> = DbscanNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.dataset_input.send(input_data)?;
+    and.data_input.send(input_data)?;
     and.on_update()?;
 
     let expected: Array1<Option<usize>> = array![None, None, Some(0), Some(1), Some(2), None, None, Some(0), Some(1), Some(2)];

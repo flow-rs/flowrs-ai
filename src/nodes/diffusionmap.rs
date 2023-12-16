@@ -7,11 +7,13 @@ use linfa_kernel::{Kernel, KernelType, KernelMethod};
 use linfa_reduction::DiffusionMap;
 use serde::{Deserialize, Serialize};
 
+
 #[derive(Clone, Deserialize, Serialize)]
 pub struct DiffusionMapConfig {
    pub embedding_size: usize,
    pub steps: usize
 }
+
 
 impl DiffusionMapConfig {
     pub fn new(embedding_size: usize, steps: usize) -> Self {
@@ -22,16 +24,17 @@ impl DiffusionMapConfig {
     }
 }
 
+
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct DiffusionMapNode<T> 
 where
-    T: Clone,
+    T: Clone
 {
     #[output]
     pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub input: Input<DatasetBase<Array2<T>, Array1<()>>>,
+    pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
     pub config_input: Input<DiffusionMapConfig>,
@@ -42,11 +45,11 @@ where
 
 impl<T> DiffusionMapNode<T>
 where
-    T: Clone,
+    T: Clone
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
-            input: Input::new(),
+            data_input: Input::new(),
             config_input: Input::new(),
             output: Output::new(change_observer),
             config: DiffusionMapConfig::new(2, 1)
@@ -70,14 +73,15 @@ where
         }
 
         // Daten kommen an
-        if let Ok(node_data) = self.input.next() {
-            println!("JW-Debug: DiffusionMapNode has received an update!");     //println!("JW-Debug DiffusionMapNode has received: {}.", node_data.records);
+        if let Ok(data) = self.data_input.next() {
+            println!("JW-Debug: DiffusionMapNode has received an update!");//println!("JW-Debug DiffusionMapNode has received: {}.", node_data.records);
             
-            let gaussian = T::from_f64(2.0).unwrap();
+            let gaussian = T::from(2.0).unwrap();
+
             let kernel = Kernel::params()
             .kind(KernelType::Sparse(3))
             .method(KernelMethod::Gaussian(gaussian))
-            .transform(node_data.records.view());
+            .transform(data.records.view());
 
             let mapped_kernel = DiffusionMap::<f32>::params(self.config.embedding_size)
             .steps(self.config.steps)
@@ -94,6 +98,7 @@ where
         Ok(())
     }
 }
+
 
 #[test]
 fn new_config_test() -> Result<(), UpdateError> {
@@ -117,7 +122,7 @@ fn new_config_test() -> Result<(), UpdateError> {
     let mut test_node: DiffusionMapNode<f32> = DiffusionMapNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
-    test_node.input.send(test_dataset)?;
+    test_node.data_input.send(test_dataset)?;
     test_node.config_input.send(test_config_input)?;
     test_node.on_update()?;
 
@@ -141,6 +146,7 @@ fn new_config_test() -> Result<(), UpdateError> {
     Ok(assert!(expected == actual))
 }
 
+
 #[test]
 fn default_config_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
@@ -159,7 +165,7 @@ fn default_config_test() -> Result<(), UpdateError> {
     let mut test_node: DiffusionMapNode<f64> = DiffusionMapNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
-    test_node.input.send(test_dataset)?;
+    test_node.data_input.send(test_dataset)?;
     test_node.on_update()?;
 
 

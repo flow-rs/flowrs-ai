@@ -8,39 +8,41 @@ use ndarray_csv::Array2Reader;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 
-
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct CSVToArrayNNode<T> 
 where
-    T: Clone,
+    T: Clone
 {
     #[output]
     pub output: Output<Array2<T>>,
 
     #[input]
-    pub input: Input<String>,
+    pub data_input: Input<String>
 }
+
 
 impl<T> CSVToArrayNNode<T> 
 where
-    T: Clone,
+    T: Clone
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
-            input: Input::new()
+            data_input: Input::new()
         }
     }
 }
 
+
 impl<T> Node for CSVToArrayNNode<T> 
 where
-    T: Clone + Send + DeserializeOwned,
+    T: Clone + Send + DeserializeOwned
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
+        println!("JW-Debug: CSVToArrayNNode has received an update!");
 
-        if let Ok(data) = self.input.next() {
-            println!("JW-Debug: CSVToArrayNNode has received an update!");
+        if let Ok(data) = self.data_input.next() {
+            println!("JW-Debug: PCANode has received data!");
 
             let has_feature_names = true;
 
@@ -53,6 +55,7 @@ where
     }
 }
 
+
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
@@ -61,7 +64,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     let mut and: CSVToArrayNNode<f64> = CSVToArrayNNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.input.send(test_input)?;
+    and.data_input.send(test_input)?;
     and.on_update()?;
 
     let expected: Array2<f64> = array![[1., 2., 3.], [4., 5., 6.], [7., 8., 9.]];

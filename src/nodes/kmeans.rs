@@ -9,14 +9,21 @@ use serde::{Deserialize, Serialize};
 
 
 #[derive(Clone)]
-pub struct KmeansConfig {
+pub struct KmeansConfig <T>
+where
+    T: Clone + Float
+{
    pub num_of_dim: usize,
    pub max_n_iterations: u64,
-   pub tolerance: f64
+   pub tolerance: T
 }
 
-impl KmeansConfig {
-    pub fn new(num_of_dim: usize, max_n_iterations: u64, tolerance: f64) -> Self {
+
+impl<T> KmeansConfig<T> 
+where
+    T: Clone + Float
+{
+    pub fn new(num_of_dim: usize, max_n_iterations: u64, tolerance: T) -> Self {
         KmeansConfig {
             num_of_dim,
             max_n_iterations,
@@ -25,38 +32,46 @@ impl KmeansConfig {
     }
 }
 
+
 #[derive(RuntimeConnectable)]
 pub struct KmeansNode<T>
 where
-    T: Clone,
+    T: Clone + Float
 {
     #[input]
-    pub config_input: Input<KmeansConfig>,
+    pub config_input: Input<KmeansConfig<T>>,
 
     #[output]
     pub output: Output<DatasetBase<Array2<T>, Array1<usize>>>,
 
     #[input]
-    pub input: Input<DatasetBase<Array2<T>, Array1<()>>>, 
+    pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>, 
 
-    config: KmeansConfig
+    config: KmeansConfig<T>
 }
+
 
 impl<T> KmeansNode<T> 
 where
-    T: Clone,
+    T: Clone + Float
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
+        let tolerance = T::from(1e-5).unwrap();
+
         Self {
             output: Output::new(change_observer),
-            input: Input::new(),
+            data_input: Input::new(),
             config_input: Input::new(),
-            config: KmeansConfig::new(3, 200, 1e-5)
+            config: KmeansConfig::new(3, 200, tolerance)
         }
     }
 }
 
-impl Node for KmeansNode<f64> {
+
+impl<T> Node for KmeansNode<T>
+where
+    T: Clone + Send + Float
+{
     fn on_update(&mut self) -> Result<(), UpdateError> {
         println!("JW-Debug: KmeansNode has received an update!");
 
@@ -68,20 +83,20 @@ impl Node for KmeansNode<f64> {
         }
 
         // Daten kommen an
-        if let Ok(data) = self.input.next() {
+        if let Ok(data) = self.data_input.next() {
             println!("JW-Debug: KmeansNode has received data!");
 
             let records = data.records.clone();
 
             let model = KMeans::params(self.config.num_of_dim)
-            .max_n_iterations(self.config.max_n_iterations)
-            .tolerance(self.config.tolerance)
-            .fit(&data)
-            .expect("Error while fitting KMeans to the dataset");
+                .max_n_iterations(self.config.max_n_iterations)
+                .tolerance(self.config.tolerance)
+                .fit(&data)
+                .expect("Error while fitting KMeans to the dataset");
 
             let result = model.predict(data);
 
-            let myoutput: DatasetBase<Array2<f64>, Array1<usize>> = DatasetBase::new(records, result.targets.clone());
+            let myoutput = DatasetBase::new(records, result.targets.clone());
 
             self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
             println!("JW-Debug: KmeansNode has sent an output!");
@@ -116,7 +131,7 @@ fn new_config_test() -> Result<(), UpdateError> {
     let mut and: KmeansNode<f64> = KmeansNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.input.send(input_data)?;
+    and.data_input.send(input_data)?;
     and.config_input.send(test_config_input)?;
     and.on_update()?;
 
@@ -125,6 +140,7 @@ fn new_config_test() -> Result<(), UpdateError> {
 
     Ok(assert!(expected == actual.targets()))
 }
+
 
 #[test]
 fn default_config_test() -> Result<(), UpdateError> {
@@ -146,7 +162,7 @@ fn default_config_test() -> Result<(), UpdateError> {
     let mut and: KmeansNode<f64> = KmeansNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.input.send(input_data)?;
+    and.data_input.send(input_data)?;
     and.on_update()?;
 
     let expected = array![2, 0, 1, 2, 0, 2, 0, 1, 2, 0];

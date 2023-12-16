@@ -3,23 +3,25 @@ use flowrs::RuntimeConnectable;
 
 use ndarray::{Array2, OwnedRepr};
 use ndarray::prelude::*;
-use linfa::{traits::Transformer, DatasetBase, Dataset};
+use linfa::{traits::Transformer, DatasetBase, Dataset, Float};
 use linfa_tsne::TSneParams;
 use serde::{Deserialize, Serialize};
+
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct TsneConfig<T> 
 where
-    T: Clone + linfa::Float,
+    T: Clone + Float
 {
    pub embedding_size: usize,
    pub perplexity: T,
    pub approx_threshold: T,
 }  
 
+
 impl<T> TsneConfig<T>
 where 
-T: Clone + linfa::Float,
+T: Clone + Float
 {
     pub fn new(embedding_size: usize, perplexity: T, approx_threshold: T) -> Self {
         TsneConfig {
@@ -30,16 +32,17 @@ T: Clone + linfa::Float,
     }
 }
 
+
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct TsneNode<T> 
 where
-    T: Clone + linfa::Float,
+    T: Clone + Float
 {
     #[output]
     pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub input: Input<DatasetBase<Array2<T>, Array1<()>>>,
+    pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
     pub config_input: Input<TsneConfig<T>>,
@@ -47,26 +50,28 @@ where
     config: TsneConfig<T>
 }
 
+
 impl<T> TsneNode<T> 
 where 
-    T: Clone + linfa::Float,
+    T: Clone + Float
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
-        let perplexity: T = T::from(1.0).unwrap();
-        let approx_threshold: T = T::from(0.1).unwrap();
+        let perplexity = T::from(1.0).unwrap();
+        let approx_threshold = T::from(0.1).unwrap();
 
         Self {
             output: Output::new(change_observer),
-            input: Input::new(),
+            data_input: Input::new(),
             config_input: Input::new(),
             config: TsneConfig::new(2, perplexity, approx_threshold)
         }
     }
 }
 
+
 impl<T> Node for TsneNode<T>
 where
-    T: Clone + Send + linfa::Float,
+    T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
         println!("JW-Debug: TsneNode has received an update!");
@@ -79,7 +84,7 @@ where
         }
 
         // Daten kommen an
-        if let Ok(data) = self.input.next() {
+        if let Ok(data) = self.data_input.next() {
             println!("JW-Debug: TsneNode has received data!");
 
             let dataset = TSneParams::embedding_size(self.config.embedding_size)
@@ -117,7 +122,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     let mut and: TsneNode<f64> = TsneNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.input.send(dataset)?;
+    and.data_input.send(dataset)?;
     and.config_input.send(test_config_input)?;
     and.on_update()?;
 
@@ -132,6 +137,7 @@ fn input_output_test() -> Result<(), UpdateError> {
         Err(UpdateError::RecvError { message: "Actual has wrong size".to_string() })
     }
 }
+
 
 #[test]
 fn default_config_test() -> Result<(), UpdateError> {
@@ -151,7 +157,7 @@ fn default_config_test() -> Result<(), UpdateError> {
     let mut and: TsneNode<f64> = TsneNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.input.send(dataset)?;
+    and.data_input.send(dataset)?;
     and.on_update()?;
 
     let actual = mock_output.next()?.records;

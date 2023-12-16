@@ -16,10 +16,21 @@ pub struct CSVToDatasetBaseConfig {
    pub has_feature_names: bool
 }
 
+
+impl CSVToDatasetBaseConfig {
+    pub fn new(separator: u8, has_feature_names: bool) -> Self {
+        CSVToDatasetBaseConfig {
+            separator: separator,
+            has_feature_names: has_feature_names
+        }
+    }
+}
+
+
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct CSVToDatasetBaseNode<T>
 where
-    T: Clone,
+    T: Clone
 {
     #[input]
     pub config_input: Input<CSVToDatasetBaseConfig>,
@@ -30,68 +41,62 @@ where
     #[output]
     pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
-    data_object: Option<String>
+    config: CSVToDatasetBaseConfig
 }
+
 
 impl<T> CSVToDatasetBaseNode<T>
 where
-    T: Clone,
+    T: Clone
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             data_input: Input::new(),
             config_input: Input::new(),
             output: Output::new(change_observer),
-            data_object : Option::None
+            config: CSVToDatasetBaseConfig::new(b',', true)
         }
     }
 }
 
+
 impl<T> Node for CSVToDatasetBaseNode<T>
 where
-    T: Clone + Send + DeserializeOwned,
+    T: Clone + Send + DeserializeOwned
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
         println!("JW-Debug: CSVToDatasetBaseNode has received an update!");
      
-        if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug CSVToDatasetBaseNode has received data: {}.", data);
-            self.data_object = Some(data);
+        if let Ok(config) = self.config_input.next() {
+            println!("JW-Debug: CSVToDatasetBaseNode has received config: {}, {}", config.separator, config.has_feature_names);
+            self.config = config;
         }
 
-        if let Some(data) = &self.data_object {
-            if let Ok(config) = self.config_input.next() {
-                println!("JW-Debug CSVToArrayNNode has received config.");
+        if let Ok(data) = self.data_input.next() {
+            println!("JW-Debug: CSVToDatasetBaseNode has received data!");
+            
+            // convert String to DatasetBase
+            let mut reader = ReaderBuilder::new()
+                .delimiter(self.config.separator)
+                .has_headers(self.config.has_feature_names)
+                .from_reader(data.as_bytes());
+            let data_ndarray: Array2<T> = reader.deserialize_array2_dynamic().map_err(|e| UpdateError::Other(e.into()))?;
+            let dataset = DatasetBase::from(data_ndarray);
+            
+            // get feature names
+            if self.config.has_feature_names {
+                let mut feature_names : Vec<String> = Vec::new();
+                for element in reader.headers().map_err(|e| UpdateError::Other(e.into()))?.into_iter() {
+                    feature_names.push(String::from(element));
+                };
+                let dataset_with_features = dataset.with_feature_names(feature_names);
 
-                // convert String to DatasetBase
-                let mut reader = ReaderBuilder::new()
-                                                            .delimiter(config.separator)
-                                                            .has_headers(config.has_feature_names)
-                                                            .from_reader(data.as_bytes());
-                let data_ndarray: Array2<T> = reader.deserialize_array2_dynamic().map_err(|e| UpdateError::Other(e.into()))?;
-                let dataset = DatasetBase::from(data_ndarray);
-
-                // get feature names
-                if config.has_feature_names {
-                    let mut feature_names : Vec<String> = Vec::new();
-                    for element in reader.headers().map_err(|e| UpdateError::Other(e.into()))?.into_iter() {
-                        feature_names.push(String::from(element));
-                    };
-                    let dataset_with_features = dataset.with_feature_names(feature_names);
-
-                    self.output.send(dataset_with_features).map_err(|e| UpdateError::Other(e.into()))?;
-                    return Ok(());
-                }
-
-                self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
-                Ok(())
-            } else {
-                Err(UpdateError::Other(anyhow::Error::msg("No config received!")))
+                self.output.send(dataset_with_features).map_err(|e| UpdateError::Other(e.into()))?;
+                return Ok(());
             }
-
-        } else {
-            Err(UpdateError::Other(anyhow::Error::msg("No data received!")))
-        }         
+            self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
+        }
+        Ok(())
     }
 }
 

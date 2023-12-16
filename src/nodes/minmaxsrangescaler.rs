@@ -2,7 +2,7 @@ use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Outp
 use flowrs::RuntimeConnectable;
 
 use ndarray::{Array2, Array1, array, ArrayBase, OwnedRepr, Dim};
-use linfa::{dataset::DatasetBase, Dataset};
+use linfa::{dataset::DatasetBase, Dataset, Float};
 use linfa::traits::{Fit, Transformer};
 use linfa_preprocessing::linear_scaling::LinearScaler;
 use serde::{Deserialize, Serialize};
@@ -11,15 +11,16 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Deserialize, Serialize)]
 pub struct MinMaxRangeScaleConfig<T>
 where
-    T: linfa::Float,
+    T: Float,
 {
    pub min: T,
    pub max: T
 }
 
+
 impl<T> MinMaxRangeScaleConfig<T>
 where
-    T: linfa::Float,
+    T: Float
 {
     pub fn new(min: T, max: T) -> Self {
         MinMaxRangeScaleConfig {
@@ -29,15 +30,16 @@ where
     }
 }
 
+
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct MinMaxRangeScaleNode<T> 
 where
-    T: Clone + linfa::Float,
+    T: Clone + Float
 {
     #[output]
     pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
     #[input]
-    pub input: Input<DatasetBase<Array2<T>, Array1<()>>>,
+    pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
     pub config_input: Input<MinMaxRangeScaleConfig<T>>,
@@ -45,18 +47,18 @@ where
     config: MinMaxRangeScaleConfig<T>
 }
 
+
 impl<T> MinMaxRangeScaleNode<T> 
 where
-    T: Clone + linfa::Float,
+    T: Clone + Float
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
-        let min: T = T::from(0.0).unwrap();
-        let max: T = T::from(1.0).unwrap();
-
+        let min = T::from(0.0).unwrap();
+        let max = T::from(1.0).unwrap();
 
         Self {
             output: Output::new(change_observer),
-            input: Input::new(),
+            data_input: Input::new(),
             config_input: Input::new(),
             config: MinMaxRangeScaleConfig::new(min, max)
 
@@ -67,7 +69,7 @@ where
 
 impl<T> Node for MinMaxRangeScaleNode<T> 
 where 
-    T: Clone + Send + linfa::Float,
+    T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
         println!("JW-Debug: MinMaxRangeScaleNode has received an update!");
@@ -80,7 +82,7 @@ where
         }
 
         // Daten kommen an
-        if let Ok(data) = self.input.next() {
+        if let Ok(data) = self.data_input.next() {
             println!("JW-Debug: DbscanNode has received data!"); //: \n Records: {} \n Targets: {}.", dataset.records, dataset.targets);
 
             let scaler = LinearScaler::min_max_range(self.config.min, self.config.max).fit(&data).unwrap();
@@ -115,7 +117,7 @@ fn new_config_test() -> Result<(), UpdateError> {
     let mut test_node: MinMaxRangeScaleNode<f64> = MinMaxRangeScaleNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
-    test_node.input.send(dataset)?;
+    test_node.data_input.send(dataset)?;
     test_node.config_input.send(test_config_input)?;
     test_node.on_update()?;
 
@@ -134,6 +136,7 @@ fn new_config_test() -> Result<(), UpdateError> {
 
     Ok(assert!(expected.records == actual.records))
 }
+
 
 #[test]
 fn default_config_test() -> Result<(), UpdateError> {
@@ -154,7 +157,7 @@ fn default_config_test() -> Result<(), UpdateError> {
     let mut test_node: MinMaxRangeScaleNode<f64> = MinMaxRangeScaleNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
-    test_node.input.send(dataset)?;
+    test_node.data_input.send(dataset)?;
     test_node.on_update()?;
 
     let expected_data: Array2<f64> = array![[0.00833333333333334, 0.041666666666666664, 0.01666666666666668, 0.29999999999999993, 0.26666666666666666, 0.30833333333333335],
