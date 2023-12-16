@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct MaxAbsScleNode<T> 
+pub struct MaxAbsSclerNode<T> 
 where
     T: Clone,
 {
@@ -22,7 +22,7 @@ where
 }
 
 
-impl<T> MaxAbsScleNode<T> 
+impl<T> MaxAbsSclerNode<T> 
 where
     T: Clone
 {
@@ -35,7 +35,7 @@ where
 }
 
 
-impl<T> Node for MaxAbsScleNode<T> 
+impl<T> Node for MaxAbsSclerNode<T> 
 where
     T: Clone + Send + Float
 {
@@ -71,7 +71,7 @@ fn input_output_test() -> Result<(), UpdateError> {
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
     let dataset = Dataset::from(test_input.clone());
 
-    let mut test_node: MaxAbsScleNode<f64> = MaxAbsScleNode::new(Some(&change_observer));
+    let mut test_node: MaxAbsSclerNode<f64> = MaxAbsSclerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
     test_node.data_input.send(dataset)?;
@@ -97,7 +97,7 @@ fn input_output_test() -> Result<(), UpdateError> {
 #[test]
 fn test_f32() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let mut node: MaxAbsScleNode<f32> = MaxAbsScleNode::new(Some(&change_observer));
+    let mut node: MaxAbsSclerNode<f32> = MaxAbsSclerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 
@@ -124,7 +124,7 @@ fn test_f32() -> Result<(), UpdateError> {
 #[test]
 fn test_f64() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let mut node: MaxAbsScleNode<f64> = MaxAbsScleNode::new(Some(&change_observer));
+    let mut node: MaxAbsSclerNode<f64> = MaxAbsSclerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 

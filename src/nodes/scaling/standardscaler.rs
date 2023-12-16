@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct StandardscaleNode<T> 
+pub struct StandardScalerNode<T> 
 where
     T: Clone
 {
@@ -21,7 +21,7 @@ where
 }
 
 
-impl<T> StandardscaleNode<T> 
+impl<T> StandardScalerNode<T> 
 where
     T: Clone
 {
@@ -34,20 +34,20 @@ where
 }
 
 
-impl<T> Node for StandardscaleNode<T> 
+impl<T> Node for StandardScalerNode<T> 
 where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: StandardscaleNode has received an update!");
+            println!("JW-Debug: StandardScalerNode has received an update!");
 
             let scaler = LinearScaler::standard().fit(&data).unwrap();
             let standard_scaled_data = scaler.transform(data);
 
             self.output.send(standard_scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
-            println!("JW-Debug: StandardscaleNode has sent an output!");
+            println!("JW-Debug: StandardScalerNode has sent an output!");
         }
         Ok(())
     }
@@ -69,7 +69,7 @@ fn input_output_test() -> Result<(), UpdateError> {
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
     let dataset = Dataset::from(test_input.clone());
 
-    let mut test_node: StandardscaleNode<f64> = StandardscaleNode::new(Some(&change_observer));
+    let mut test_node: StandardScalerNode<f64> = StandardScalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
     test_node.data_input.send(dataset)?;
@@ -95,7 +95,7 @@ fn input_output_test() -> Result<(), UpdateError> {
 #[test]
 fn test_f32() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let mut node: StandardscaleNode<f32> = StandardscaleNode::new(Some(&change_observer));
+    let mut node: StandardScalerNode<f32> = StandardScalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 
@@ -122,7 +122,7 @@ fn test_f32() -> Result<(), UpdateError> {
 #[test]
 fn test_f64() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let mut node: StandardscaleNode<f64> = StandardscaleNode::new(Some(&change_observer));
+    let mut node: StandardScalerNode<f64> = StandardScalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 

@@ -11,7 +11,7 @@ use std::{collections::{HashMap, HashSet}, str::FromStr, fmt};
 
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct CSVToEncodedDatasetBaseConfig {
+pub struct CSVToEncodedDatasetConfig {
    pub separator: u8,
    pub has_feature_names: bool,
    nominals: Vec<String>,
@@ -20,12 +20,12 @@ pub struct CSVToEncodedDatasetBaseConfig {
 }
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct CSVToEncodedDatasetBaseNode<T>
+pub struct CSVToEncodedDatasetNode<T>
 where
     T: Clone
 {
     #[input]
-    pub config_input: Input<CSVToEncodedDatasetBaseConfig>,
+    pub config_input: Input<CSVToEncodedDatasetConfig>,
 
     #[input]
     pub data_input: Input<String>,
@@ -36,7 +36,7 @@ where
     data_object: Option<String>
 }
 
-impl<T> CSVToEncodedDatasetBaseNode<T>
+impl<T> CSVToEncodedDatasetNode<T>
 where
     T: Clone
 {
@@ -50,7 +50,7 @@ where
     }
 }
 
-impl<T> Node for CSVToEncodedDatasetBaseNode<T>
+impl<T> Node for CSVToEncodedDatasetNode<T>
 where
     <T as FromStr>::Err: fmt::Debug,
     T: Clone + Send + DeserializeOwned + FromStr + Float,
@@ -59,7 +59,7 @@ where
     fn on_update(&mut self) -> Result<(), UpdateError> {
      
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug CSVToEncodedDatasetBaseNode has received data: {}.", data);
+            println!("JW-Debug CSVToEncodedDatasetNode has received data: {}.", data);
             self.data_object = Some(data);
         }
 
@@ -166,7 +166,7 @@ where
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
     let test_data_input = String::from("Feate1,Feature2,Feature3,F4,F5,F6\n1,2,3,1,2,11\n4,5,6,1,5,3\n7,8,9,1,2,3\n10,8,9,1,6,4\n12,8,9,1,2,3\n7,8,9,1,2,3");
-    let test_config_input = CSVToEncodedDatasetBaseConfig{
+    let test_config_input = CSVToEncodedDatasetConfig{
         separator: b',',
         has_feature_names: true,
         nominals: vec!["Feate1".to_string(), "Feature2".to_string()],
@@ -174,7 +174,7 @@ fn input_output_test() -> Result<(), UpdateError> {
         others: vec!["Feature3".to_string(), "F4".to_string()]
     };
 
-    let mut and: CSVToEncodedDatasetBaseNode<f64> = CSVToEncodedDatasetBaseNode::new(Some(&change_observer));
+    let mut and: CSVToEncodedDatasetNode<f64> = CSVToEncodedDatasetNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.data_input.send(test_data_input)?;

@@ -11,16 +11,17 @@ use flowrs::{
     sched::round_robin::RoundRobinScheduler,
 };
 
-use flowrs_ai::{csv2arrayn::{CSVToArrayNNode, self},
-                csvtodatasetbase::{CSVToDatasetBaseNode, CSVToDatasetBaseConfig, self},
+use flowrs_ai::{csv2ndarray::{CSVToNdarrayNode, self},
+                csv2dataset::{CSVToDatasetNode, CSVToDatasetConfig, self},
                 dbscan::{DbscanNode, DbscanConfig},
                 diffusionmap::{DiffusionMapNode, self, DiffusionMapConfig},
                 kmeans::KmeansNode,
-                maxabsscale::{MaxAbsScleNode, self},
-                minmaxscale::{MinMaxScaleNode, self},
+                maxabsscaler::{MaxAbsSclerNode, self},
+                minmaxscaler::{MinMaxScalerNode, self},
                 pca::PCANode,
-                standardscale::{StandardscaleNode, self}, convertndarray2datasetbase::ConvertNdarray2DatasetBase, l1normscaler::L1NormscalerNode,
-                };
+                standardscaler::{StandardScalerNode, self},
+                ndarray2dataset::NdarrayToDatasetNode,
+                l1normscaler::L1NormScalerNode,};
 use flowrs_std::{
     debug::DebugNode,
     timer::{TimerStrategy, WaitTimer},
@@ -63,9 +64,9 @@ fn csv_array_dataset_standard_diffmap_dbscan() {
         Some(&change_observer),
     );
 
-    let csv2arrayn_node: CSVToArrayNNode<f64> = CSVToArrayNNode::new(Some(&change_observer));
-    let convertndarray2datasetbase: ConvertNdarray2DatasetBase<f64> = ConvertNdarray2DatasetBase::new(Some(&change_observer));
-    let standardscale_node: StandardscaleNode<f64> = StandardscaleNode::new(Some(&change_observer));
+    let csv2arrayn_node: CSVToNdarrayNode<f64> = CSVToNdarrayNode::new(Some(&change_observer));
+    let NdarrayToDatasetNode: NdarrayToDatasetNode<f64> = NdarrayToDatasetNode::new(Some(&change_observer));
+    let standardscale_node: StandardScalerNode<f64> = StandardScalerNode::new(Some(&change_observer));
     let diffusionmap_node: DiffusionMapNode<f64> = DiffusionMapNode::new(Some(&change_observer));
     let dbscan_node: DbscanNode<f64> = DbscanNode::new(Some(&change_observer));
     let debug_node = DebugNode::<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<Option<usize>>, Dim<[usize; 1]>>>>::new(Some(&change_observer));
@@ -75,8 +76,8 @@ fn csv_array_dataset_standard_diffmap_dbscan() {
 
     // Connections
     connect(value_node.output.clone(), csv2arrayn_node.data_input.clone());
-    connect(csv2arrayn_node.output.clone(), convertndarray2datasetbase.data_input.clone());
-    connect(convertndarray2datasetbase.output.clone(), standardscale_node.data_input.clone());
+    connect(csv2arrayn_node.output.clone(), NdarrayToDatasetNode.data_input.clone());
+    connect(NdarrayToDatasetNode.output.clone(), standardscale_node.data_input.clone());
 
     connect(diffusionmap_config_node.output.clone(), diffusionmap_node.config_input.clone());
     connect(standardscale_node.output.clone(), diffusionmap_node.data_input.clone());
@@ -89,7 +90,7 @@ fn csv_array_dataset_standard_diffmap_dbscan() {
     let mut flow: Flow = Flow::new_empty();
     flow.add_node(value_node);
     flow.add_node(csv2arrayn_node);
-    flow.add_node(convertndarray2datasetbase);
+    flow.add_node(NdarrayToDatasetNode);
     flow.add_node(standardscale_node);
     flow.add_node(diffusionmap_config_node);
     flow.add_node(diffusionmap_node);
@@ -135,17 +136,17 @@ fn csv_array_dataset_l1_pca_kmeans() {
         Some(&change_observer),
     );
 
-    let csv2arrayn_node: CSVToArrayNNode<f64> = CSVToArrayNNode::new(Some(&change_observer));
-    let convertndarray2datasetbase: ConvertNdarray2DatasetBase<f64> = ConvertNdarray2DatasetBase::new(Some(&change_observer));
-    let l1_node: L1NormscalerNode<f64> = L1NormscalerNode::new(Some(&change_observer));
+    let csv2arrayn_node: CSVToNdarrayNode<f64> = CSVToNdarrayNode::new(Some(&change_observer));
+    let NdarrayToDatasetNode: NdarrayToDatasetNode<f64> = NdarrayToDatasetNode::new(Some(&change_observer));
+    let l1_node: L1NormScalerNode<f64> = L1NormScalerNode::new(Some(&change_observer));
     let pca_node: PCANode<f64> = PCANode::new(Some(&change_observer));
     let kmeans_node: KmeansNode<f64> = KmeansNode::new(Some(&change_observer));
     let debug_node = DebugNode::<DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<usize>, Dim<[usize; 1]>>>>::new(Some(&change_observer));
 
     // Connections
     connect(value_node.output.clone(), csv2arrayn_node.data_input.clone());
-    connect(csv2arrayn_node.output.clone(), convertndarray2datasetbase.data_input.clone());
-    connect(convertndarray2datasetbase.output.clone(), l1_node.data_input.clone());
+    connect(csv2arrayn_node.output.clone(), NdarrayToDatasetNode.data_input.clone());
+    connect(NdarrayToDatasetNode.output.clone(), l1_node.data_input.clone());
     connect(l1_node.output.clone(), pca_node.data_input.clone());
     connect(pca_node.output.clone(), kmeans_node.data_input.clone());
     connect(kmeans_node.output.clone(), debug_node.input.clone());
@@ -154,7 +155,7 @@ fn csv_array_dataset_l1_pca_kmeans() {
     let mut flow: Flow = Flow::new_empty();
     flow.add_node(value_node);
     flow.add_node(csv2arrayn_node);
-    flow.add_node(convertndarray2datasetbase);
+    flow.add_node(NdarrayToDatasetNode);
     flow.add_node(l1_node);
     flow.add_node(pca_node);
     flow.add_node(kmeans_node);

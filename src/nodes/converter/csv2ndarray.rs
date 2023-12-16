@@ -9,15 +9,15 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct CSVToArrayNConfig {
+pub struct CSVToNdarrayConfig {
    pub separator: u8,
    pub has_feature_names: bool
 }
 
 
-impl CSVToArrayNConfig {
+impl CSVToNdarrayConfig {
     pub fn new(separator: u8, has_feature_names: bool) -> Self {
-        CSVToArrayNConfig {
+        CSVToNdarrayConfig {
             separator: separator,
             has_feature_names: has_feature_names
         }
@@ -26,7 +26,7 @@ impl CSVToArrayNConfig {
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct CSVToArrayNNode<T> 
+pub struct CSVToNdarrayNode<T> 
 where
     T: Clone
 {
@@ -37,13 +37,13 @@ where
     pub data_input: Input<String>,
 
     #[input]
-    pub config_input: Input<CSVToArrayNConfig>,
+    pub config_input: Input<CSVToNdarrayConfig>,
 
-    config: CSVToArrayNConfig
+    config: CSVToNdarrayConfig
 }
 
 
-impl<T> CSVToArrayNNode<T> 
+impl<T> CSVToNdarrayNode<T> 
 where
     T: Clone
 {
@@ -52,21 +52,21 @@ where
             output: Output::new(change_observer),
             data_input: Input::new(),
             config_input: Input::new(),
-            config: CSVToArrayNConfig::new(b',', false)
+            config: CSVToNdarrayConfig::new(b',', false)
         }
     }
 }
 
 
-impl<T> Node for CSVToArrayNNode<T> 
+impl<T> Node for CSVToNdarrayNode<T> 
 where
     T: Clone + Send + DeserializeOwned
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: CSVToArrayNNode has received an update!");
+        println!("JW-Debug: CSVToNdarrayNode has received an update!");
 
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: CSVToArrayNNode has received config: {}, {}", config.separator, config.has_feature_names);
+            println!("JW-Debug: CSVToNdarrayNode has received config: {}, {}", config.separator, config.has_feature_names);
             self.config = config;
         }
 
@@ -89,9 +89,9 @@ where
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let test_input = String::from("Feature1,Feature2,Feature3\n1,2,3\n4,5,6\n7,8,9");
+    let test_input = String::from("1,2,3\n4,5,6\n7,8,9");
 
-    let mut and: CSVToArrayNNode<f64> = CSVToArrayNNode::new(Some(&change_observer));
+    let mut and: CSVToNdarrayNode<f64> = CSVToNdarrayNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.data_input.send(test_input)?;
@@ -107,7 +107,7 @@ fn input_output_test() -> Result<(), UpdateError> {
 #[test]
 fn test_f32() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let mut node: CSVToArrayNNode<f32> = CSVToArrayNNode::new(Some(&change_observer));
+    let mut node: CSVToNdarrayNode<f32> = CSVToNdarrayNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 
@@ -129,7 +129,7 @@ fn test_f32() -> Result<(), UpdateError> {
 #[test]
 fn test_f64() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let mut node: CSVToArrayNNode<f64> = CSVToArrayNNode::new(Some(&change_observer));
+    let mut node: CSVToNdarrayNode<f64> = CSVToNdarrayNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 

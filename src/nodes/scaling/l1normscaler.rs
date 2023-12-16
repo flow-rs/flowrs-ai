@@ -9,7 +9,7 @@ use linfa::prelude::*;
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct L1NormscalerNode<T>
+pub struct L1NormScalerNode<T>
 where
     T: Clone
 {
@@ -21,7 +21,7 @@ where
 }
 
 
-impl<T> L1NormscalerNode<T> 
+impl<T> L1NormScalerNode<T> 
 where
     T: Clone
 {
@@ -34,20 +34,20 @@ where
 }
 
 
-impl<T> Node for L1NormscalerNode<T>
+impl<T> Node for L1NormScalerNode<T>
 where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: L1NormscalerNode has received an update!");//println!("JW-Debug: L1NormscalerNode has received: {}.", node_data.records);
+            println!("JW-Debug: L1NormScalerNode has received an update!");//println!("JW-Debug: L1NormScalerNode has received: {}.", node_data.records);
 
             let scaler = NormScaler::l1();
             let normalized_data = scaler.transform(data);
     
             self.output.send(normalized_data).map_err(|e| UpdateError::Other(e.into()))?;
-            println!("JW-Debug: L1NormscalerNode has sent an output!");
+            println!("JW-Debug: L1NormScalerNode has sent an output!");
 
         }
         Ok(())
@@ -65,7 +65,7 @@ fn input_output_test() -> Result<(), UpdateError> {
 
     let dataset = Dataset::from(test_input.clone());
 
-    let mut and: L1NormscalerNode<f64> = L1NormscalerNode::new(Some(&change_observer));
+    let mut and: L1NormScalerNode<f64> = L1NormScalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.data_input.send(dataset)?;
@@ -86,7 +86,7 @@ fn input_output_test() -> Result<(), UpdateError> {
 #[test]
 fn test_f32() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let mut node: L1NormscalerNode<f32> = L1NormscalerNode::new(Some(&change_observer));
+    let mut node: L1NormScalerNode<f32> = L1NormScalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 
@@ -113,7 +113,7 @@ fn test_f32() -> Result<(), UpdateError> {
 #[test]
 fn test_f64() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let mut node: L1NormscalerNode<f64> = L1NormscalerNode::new(Some(&change_observer));
+    let mut node: L1NormScalerNode<f64> = L1NormScalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 

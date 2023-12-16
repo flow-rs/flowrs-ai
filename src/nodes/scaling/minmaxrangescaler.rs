@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct MinMaxRangeScaleConfig<T>
+pub struct MinMaxRangeScalerConfig<T>
 where
     T: Float,
 {
@@ -18,12 +18,12 @@ where
 }
 
 
-impl<T> MinMaxRangeScaleConfig<T>
+impl<T> MinMaxRangeScalerConfig<T>
 where
     T: Float
 {
     pub fn new(min: T, max: T) -> Self {
-        MinMaxRangeScaleConfig {
+        MinMaxRangeScalerConfig {
             min,
             max,
         }
@@ -42,9 +42,9 @@ where
     pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub config_input: Input<MinMaxRangeScaleConfig<T>>,
+    pub config_input: Input<MinMaxRangeScalerConfig<T>>,
 
-    config: MinMaxRangeScaleConfig<T>
+    config: MinMaxRangeScalerConfig<T>
 }
 
 
@@ -60,7 +60,7 @@ where
             output: Output::new(change_observer),
             data_input: Input::new(),
             config_input: Input::new(),
-            config: MinMaxRangeScaleConfig::new(min, max)
+            config: MinMaxRangeScalerConfig::new(min, max)
 
         }
     }
@@ -98,7 +98,7 @@ where
 #[test]
 fn new_config_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let test_config_input = MinMaxRangeScaleConfig{
+    let test_config_input = MinMaxRangeScalerConfig{
         min: 0.0,
         max: 1.0
     };

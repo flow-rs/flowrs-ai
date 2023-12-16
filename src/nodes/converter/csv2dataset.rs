@@ -11,15 +11,15 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct CSVToDatasetBaseConfig {
+pub struct CSVToDatasetConfig {
    pub separator: u8,
    pub has_feature_names: bool
 }
 
 
-impl CSVToDatasetBaseConfig {
+impl CSVToDatasetConfig {
     pub fn new(separator: u8, has_feature_names: bool) -> Self {
-        CSVToDatasetBaseConfig {
+        CSVToDatasetConfig {
             separator: separator,
             has_feature_names: has_feature_names
         }
@@ -28,12 +28,12 @@ impl CSVToDatasetBaseConfig {
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct CSVToDatasetBaseNode<T>
+pub struct CSVToDatasetNode<T>
 where
     T: Clone
 {
     #[input]
-    pub config_input: Input<CSVToDatasetBaseConfig>,
+    pub config_input: Input<CSVToDatasetConfig>,
 
     #[input]
     pub data_input: Input<String>,
@@ -41,11 +41,11 @@ where
     #[output]
     pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
-    config: CSVToDatasetBaseConfig
+    config: CSVToDatasetConfig
 }
 
 
-impl<T> CSVToDatasetBaseNode<T>
+impl<T> CSVToDatasetNode<T>
 where
     T: Clone
 {
@@ -54,26 +54,26 @@ where
             data_input: Input::new(),
             config_input: Input::new(),
             output: Output::new(change_observer),
-            config: CSVToDatasetBaseConfig::new(b',', false)
+            config: CSVToDatasetConfig::new(b',', false)
         }
     }
 }
 
 
-impl<T> Node for CSVToDatasetBaseNode<T>
+impl<T> Node for CSVToDatasetNode<T>
 where
     T: Clone + Send + DeserializeOwned
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: CSVToDatasetBaseNode has received an update!");
+        println!("JW-Debug: CSVToDatasetNode has received an update!");
      
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: CSVToDatasetBaseNode has received config: {}, {}", config.separator, config.has_feature_names);
+            println!("JW-Debug: CSVToDatasetNode has received config: {}, {}", config.separator, config.has_feature_names);
             self.config = config;
         }
 
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: CSVToDatasetBaseNode has received data!");
+            println!("JW-Debug: CSVToDatasetNode has received data!");
             
             // convert String to DatasetBase
             let mut reader = ReaderBuilder::new()
@@ -105,12 +105,12 @@ where
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
     let test_data_input = String::from("Feate1,Feature2,Feature3\n1,2,3\n4,5,6\n7,8,9");
-    let test_config_input = CSVToDatasetBaseConfig{
+    let test_config_input = CSVToDatasetConfig{
         separator: b',',
         has_feature_names: true
     };
 
-    let mut and: CSVToDatasetBaseNode<u32> = CSVToDatasetBaseNode::new(Some(&change_observer));
+    let mut and: CSVToDatasetNode<u32> = CSVToDatasetNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.data_input.send(test_data_input)?;
@@ -127,7 +127,7 @@ fn input_output_test() -> Result<(), UpdateError> {
 #[test]
 fn test_f32() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let mut node: CSVToDatasetBaseNode<f32> = CSVToDatasetBaseNode::new(Some(&change_observer));
+    let mut node: CSVToDatasetNode<f32> = CSVToDatasetNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 
@@ -149,7 +149,7 @@ fn test_f32() -> Result<(), UpdateError> {
 #[test]
 fn test_f64() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let mut node: CSVToDatasetBaseNode<f64> = CSVToDatasetBaseNode::new(Some(&change_observer));
+    let mut node: CSVToDatasetNode<f64> = CSVToDatasetNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 

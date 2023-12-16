@@ -8,7 +8,7 @@ use linfa::prelude::*;
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct ConvertNdarray2DatasetBase<T> 
+pub struct NdarrayToDatasetNode<T> 
 where
     T: Clone
 { 
@@ -20,7 +20,7 @@ where
 }
 
 
-impl<T> ConvertNdarray2DatasetBase<T>
+impl<T> NdarrayToDatasetNode<T>
 where
     T: Clone
 {
@@ -33,14 +33,14 @@ where
 }
 
 
-impl<T> Node for ConvertNdarray2DatasetBase<T> 
+impl<T> Node for NdarrayToDatasetNode<T> 
 where
     T: Clone + Send
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: ConvertNdarray2DatasetBase has received an update!");
+            println!("JW-Debug: NdarrayToDatasetNode has received an update!");
 
             let dataset = Dataset::from(data.clone());
 
@@ -56,7 +56,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
     let test_input: Array2<f64> = array![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
 
-    let mut test_node: ConvertNdarray2DatasetBase<f64> = ConvertNdarray2DatasetBase::new(Some(&change_observer));
+    let mut test_node: NdarrayToDatasetNode<f64> = NdarrayToDatasetNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
     test_node.data_input.send(test_input.clone())?;
@@ -72,7 +72,7 @@ fn input_output_test() -> Result<(), UpdateError> {
 #[test]
 fn test_f32() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let mut node: ConvertNdarray2DatasetBase<f32> = ConvertNdarray2DatasetBase::new(Some(&change_observer));
+    let mut node: NdarrayToDatasetNode<f32> = NdarrayToDatasetNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 
@@ -93,7 +93,7 @@ fn test_f32() -> Result<(), UpdateError> {
 #[test]
 fn test_f64() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let mut node: ConvertNdarray2DatasetBase<f64> = ConvertNdarray2DatasetBase::new(Some(&change_observer));
+    let mut node: NdarrayToDatasetNode<f64> = NdarrayToDatasetNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 
