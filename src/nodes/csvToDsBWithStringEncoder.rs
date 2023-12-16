@@ -1,6 +1,6 @@
-/*
-// use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
-// use flowrs::RuntimeConnectable;
+
+use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
+use flowrs::RuntimeConnectable;
 
 use linfa::dataset::{DatasetBase, Float, Labels, Records};
 use linfa_kernel::Inner;
@@ -8,9 +8,8 @@ use ndarray::{array, ArrayBase, OwnedRepr, Dim, Axis, Array1, Array2, s, concate
 use csv::ReaderBuilder;
 use ndarray_csv::Array2Reader;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use std::collections::{HashMap, HashSet};
+use std::{collections::{HashMap, HashSet}, str::FromStr, fmt};
 use linfa::traits::Transformer;
-
 use linfa::prelude::*;
 use std::error::Error;
 
@@ -26,47 +25,49 @@ pub struct CSVToEncodedDatasetBaseConfig {
    others: Vec<String>
 }
 
-// #[derive(RuntimeConnectable, Deserialize, Serialize)]
-// pub struct CSVToEncodedDatasetBaseNode<T>
-// where
-//     T: Clone,
-// {
-//     #[input]
-//     pub config_input: Input<CSVToEncodedDatasetBaseConfig>,
+#[derive(RuntimeConnectable, Deserialize, Serialize)]
+pub struct CSVToEncodedDatasetBaseNode<T>
+where
+    T: Clone,
+{
+    #[input]
+    pub config_input: Input<CSVToEncodedDatasetBaseConfig>,
 
-//     #[input]
-//     pub data_input: Input<String>,
+    #[input]
+    pub data_input: Input<String>,
 
     #[output]
     pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
-//     data_object: Option<String>
-// }
+    data_object: Option<String>
+}
 
-// impl<T> CSVToEncodedDatasetBaseNode<T>
-// where
-//     T: Clone,
-// {
-//     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
-//         Self {
-//             data_input: Input::new(),
-//             config_input: Input::new(),
-//             output: Output::new(change_observer),
-//             data_object : Option::None
-//         }
-//     }
-// }
+impl<T> CSVToEncodedDatasetBaseNode<T>
+where
+    T: Clone,
+{
+    pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
+        Self {
+            data_input: Input::new(),
+            config_input: Input::new(),
+            output: Output::new(change_observer),
+            data_object : Option::None
+        }
+    }
+}
 
-// impl<T> Node for CSVToEncodedDatasetBaseNode<T>
-// where
-//     T: Clone + Send + DeserializeOwned,
-// {
-//     fn on_update(&mut self) -> Result<(), UpdateError> {
+impl<T> Node for CSVToEncodedDatasetBaseNode<T>
+where
+    <T as FromStr>::Err: fmt::Debug,
+    T: Clone + Send + DeserializeOwned + FromStr + linfa::Float,
+    f64: Into<T>
+{
+    fn on_update(&mut self) -> Result<(), UpdateError> {
      
-//         if let Ok(data) = self.data_input.next() {
-//             println!("JW-Debug CSVToEncodedDatasetBaseNode has received data: {}.", data);
-//             self.data_object = Some(data);
-//         }
+        if let Ok(data) = self.data_input.next() {
+            println!("JW-Debug CSVToEncodedDatasetBaseNode has received data: {}.", data);
+            self.data_object = Some(data);
+        }
 
         if let Some(data) = &self.data_object {
             if let Ok(config) = self.config_input.next() {
@@ -86,10 +87,10 @@ pub struct CSVToEncodedDatasetBaseConfig {
 
                 println!("JW-Debug CSVToArrayNNode has received config.");
 
-//                 let mut reader = ReaderBuilder::new()
-//                 .delimiter(config.separator)
-//                 .has_headers(config.has_feature_names)
-//                 .from_reader(data.as_bytes());
+                let mut reader = ReaderBuilder::new()
+                .delimiter(config.separator)
+                .has_headers(config.has_feature_names)
+                .from_reader(data.as_bytes());
         
                 // Skip the header row
                 reader.headers().unwrap(); // Use unwrap() for simplicity, handle errors as needed
@@ -114,7 +115,7 @@ pub struct CSVToEncodedDatasetBaseConfig {
                 // Separating Nominal and Other Data:
                 let mut nominal_data: Vec<Vec<String>> = Vec::new();
                 let mut ordinal_data: Vec<Vec<String>> = Vec::new();
-                let mut other_data: Vec<Vec<f64>> = Vec::new();
+                let mut other_data: Vec<Vec<T>> = Vec::new();
                 
                 for (col_idx, col) in data_ndarray.axis_iter_mut(Axis(1)).enumerate() {
                     if nominal_indices.contains(&col_idx) {
@@ -126,13 +127,13 @@ pub struct CSVToEncodedDatasetBaseConfig {
                     }
                 }
 
-                let mut label_encoded_ordinals: Vec<Vec<f64>> = Vec::new();
+                let mut label_encoded_ordinals: Vec<Vec<T>> = Vec::new();
                 for ordinal in ordinal_data.iter() {
                     label_encoded_ordinals.push(label_encode(&ordinal));
                 }
 
                 // Example usage:
-                let mut one_hot_encoded_nominals: Vec<Array2<f64>> = Vec::new();
+                let mut one_hot_encoded_nominals: Vec<Array2<T>> = Vec::new();
                 let mut one_hot_feature_names: Vec<String> = Vec::new();
 
                 // Assuming `nominal_data` and `config.nominals` are defined somewhere
@@ -143,15 +144,15 @@ pub struct CSVToEncodedDatasetBaseConfig {
                 }
 
                 // Converting Data to ndarrays:
-                let nominal_records: Array2<f64> = concatenate_arrays(one_hot_encoded_nominals);
-                let ordinal_records: Array2<f64> = Array2::from_shape_vec((label_encoded_ordinals.len(), headers.len()), label_encoded_ordinals.into_iter().flatten().collect()).unwrap();
-                let other_records: Array2<f64> = Array2::from_shape_vec((other_data.len(), headers.len()), other_data.into_iter().flatten().collect()).unwrap();
+                let nominal_records: Array2<T> = concatenate_arrays(one_hot_encoded_nominals);
+                let ordinal_records: Array2<T> = Array2::from_shape_vec((label_encoded_ordinals.len(), headers.len()), label_encoded_ordinals.into_iter().flatten().collect()).unwrap();
+                let other_records: Array2<T> = Array2::from_shape_vec((other_data.len(), headers.len()), other_data.into_iter().flatten().collect()).unwrap();
 
-                let combined_records = concatenate![
+                let combined_records: Array2<T> = concatenate![
                     Axis(0),
-                    nominal_records.view(),
-                    ordinal_records.view(),
-                    other_records.view()
+                    nominal_records,
+                    ordinal_records,
+                    other_records
                 ];
 
                 let mut combined_feature_names: Vec<String> = Vec::new();
@@ -159,24 +160,23 @@ pub struct CSVToEncodedDatasetBaseConfig {
                 combined_feature_names.extend(config.ordinals);
                 combined_feature_names.extend(config.others);
 
-                let encoded_dataset = DatasetBase::from(combined_records).with_feature_names(combined_feature_names);
-
+                let encoded_dataset:DatasetBase<ArrayBase<OwnedRepr<T>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(combined_records.t().to_owned()).with_feature_names(combined_feature_names);
                 println!("Encoded dataset: {:?}", encoded_dataset);
 
                 //////////////////////////////////////////////////////////////////////////////
 
 
-                self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
+                self.output.send(encoded_dataset).map_err(|e| UpdateError::Other(e.into()))?;
                 Ok(())
             } else {
                 Err(UpdateError::Other(anyhow::Error::msg("No config received!")))
             }
 
-//         } else {
-//             Err(UpdateError::Other(anyhow::Error::msg("No data received!")))
-//         }         
-//     }
-// }
+        } else {
+            Err(UpdateError::Other(anyhow::Error::msg("No data received!")))
+        }         
+    }
+}
 
 
 #[test]
@@ -191,32 +191,42 @@ fn input_output_test() -> Result<(), UpdateError> {
         others: vec!["Feature3".to_string(), "F4".to_string()]
     };
 
-//     let mut and: CSVToEncodedDatasetBaseNode<u32> = CSVToEncodedDatasetBaseNode::new(Some(&change_observer));
-//     let mock_output = flowrs::connection::Edge::new();
-//     flowrs::connection::connect(and.output.clone(), mock_output.clone());
-//     and.data_input.send(test_data_input)?;
-//     and.config_input.send(test_config_input)?;
-//     and.on_update()?;
+    let mut and: CSVToEncodedDatasetBaseNode<f64> = CSVToEncodedDatasetBaseNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(and.output.clone(), mock_output.clone());
+    and.data_input.send(test_data_input)?;
+    and.config_input.send(test_config_input)?;
+    and.on_update()?;
 
-    let expected: Array2<u32> = array![[1, 2, 3, 1, 2, 11], [4, 5, 6, 1, 5, 3], [7, 8, 9, 1, 2, 3], [10, 8, 9, 1, 6, 4], [12, 8, 9, 1, 2, 3], [7, 8, 9, 1, 2, 3]];
-    let actual: Array2<u32> = mock_output.next()?.records;
+    let expected: Array2<f64> = array![[1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 3.0, 1.0],
+                                        [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 6.0, 1.0],
+                                        [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 9.0, 1.0],
+                                        [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 2.0, 9.0, 1.0],
+                                        [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 9.0, 1.0],
+                                        [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 9.0, 1.0]];
+    let actual: Array2<f64> = mock_output.next()?.records;
     
     Ok(assert!(expected == actual))
 }
 
-fn label_encode(input: &Vec<String>) -> Vec<f64> {
+fn label_encode<T>(input: &Vec<String>) -> Vec<T> 
+where
+    T: Clone + Copy,
+    f64: Into<T>
+{
+
     // Create a HashMap to store the mapping of unique strings to labels
-    let mut label_mapping: HashMap<&String, f64> = HashMap::new();
+    let mut label_mapping: HashMap<&String, T> = HashMap::new();
 
     // Assign labels to unique strings
     let mut label_counter = 0.0;
-    let labels: Vec<f64> = input
+    let labels: Vec<T> = input
         .iter()
         .map(|s| {
             *label_mapping.entry(s).or_insert_with(|| {
                 let label = label_counter;
                 label_counter += 1.0;
-                label
+                label.into()
             })
         })
         .collect();
@@ -224,7 +234,11 @@ fn label_encode(input: &Vec<String>) -> Vec<f64> {
     labels
 }
 
-fn one_hot_encode(input: &Vec<String>, feature_name: String) -> (Array2<f64>, Vec<String>) {
+fn one_hot_encode<T>(input: &Vec<String>, feature_name: String) -> (Array2<T>, Vec<String>) 
+where
+    T: Clone + linfa::Float,
+    f64: Into<T>
+{
     // Create a HashMap to store the mapping of unique strings to column indices
     let mut column_mapping: HashMap<&String, usize> = HashMap::new();
 
@@ -243,18 +257,21 @@ fn one_hot_encode(input: &Vec<String>, feature_name: String) -> (Array2<f64>, Ve
     // Create a sparse one-hot encoding matrix
     let rows = input.len();
     let cols = column_counter;
-    let mut encoding: ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>> = Array2::zeros((rows, cols));
+    let mut encoding: ArrayBase<OwnedRepr<T>, Dim<[usize; 2]>> = Array2::zeros((rows, cols));
 
     for (row_idx, s) in input.iter().enumerate() {
         if let Some(&col_idx) = column_mapping.get(s) {
-            encoding[[row_idx, col_idx]] = 1.0;
+            encoding[[row_idx, col_idx]] = 1.0.into();
         }
     }
 
     (encoding, feature_names)
 }
 
-fn concatenate_arrays(arrays: Vec<Array2<f64>>) -> Array2<f64> {
+fn concatenate_arrays<T>(arrays: Vec<Array2<T>>) -> Array2<T> 
+where
+    T: Clone + linfa::Float
+{
     // Check if the vector is not empty
     if arrays.is_empty() {
         panic!("Input vector is empty");
@@ -278,4 +295,4 @@ fn concatenate_arrays(arrays: Vec<Array2<f64>>) -> Array2<f64> {
     }
 
     result.t().to_owned()
-}*/
+}
