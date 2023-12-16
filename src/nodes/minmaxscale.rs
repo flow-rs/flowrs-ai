@@ -1,7 +1,7 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::{Array2, Array1, array, ArrayBase, OwnedRepr, Dim};
+use ndarray::{Array2, Array1, array};
 use linfa::{dataset::DatasetBase, Dataset, Float};
 use linfa::traits::{Fit, Transformer};
 use linfa_preprocessing::linear_scaling::LinearScaler;

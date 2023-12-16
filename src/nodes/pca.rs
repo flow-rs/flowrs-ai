@@ -1,9 +1,7 @@
-use std::arch::x86_64::_MM_EXCEPT_DENORM;
-
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::{Array2, Array1, array, ArrayBase, Dim, OwnedRepr};
+use ndarray::{Array2, Array1, array};
 use linfa::{Dataset, DatasetBase};
 use linfa_reduction::Pca;
 use linfa::traits::{Fit, Predict};

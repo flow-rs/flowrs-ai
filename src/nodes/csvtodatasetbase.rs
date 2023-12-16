@@ -3,7 +3,7 @@ use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Outp
 use flowrs::RuntimeConnectable;
 
 use linfa::DatasetBase;
-use ndarray::{array, Array1, ArrayBase, OwnedRepr, Dim};
+use ndarray::{array, Array1};
 use ndarray::Array2;
 use csv::ReaderBuilder;
 use ndarray_csv::Array2Reader;

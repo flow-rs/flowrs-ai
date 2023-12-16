@@ -2,18 +2,12 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use linfa::dataset::{DatasetBase, Float, Labels, Records};
-use linfa_kernel::Inner;
+use linfa::dataset::{DatasetBase, Float};
 use ndarray::{array, ArrayBase, OwnedRepr, Dim, Axis, Array1, Array2, s, concatenate};
 use csv::ReaderBuilder;
 use ndarray_csv::Array2Reader;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::{collections::{HashMap, HashSet}, str::FromStr, fmt};
-use linfa::traits::Transformer;
-use linfa::prelude::*;
-use std::error::Error;
-
-
 
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -78,15 +72,8 @@ where
                                                             .delimiter(config.separator)
                                                             .has_headers(config.has_feature_names)
                                                             .from_reader(data.as_bytes());
-                let data_ndarray2: Array2<T> = reader.deserialize_array2_dynamic().map_err(|e| UpdateError::Other(e.into()))?;
-                //////////////////////////////////////////////////////////////////////////////
 
                 println!("JW-Debug CSVToArrayNNode has received config.");
-
-                let mut reader = ReaderBuilder::new()
-                .delimiter(config.separator)
-                .has_headers(config.has_feature_names)
-                .from_reader(data.as_bytes());
         
                 // Skip the header row
                 reader.headers().unwrap(); // Use unwrap() for simplicity, handle errors as needed
