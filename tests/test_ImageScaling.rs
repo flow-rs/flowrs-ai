@@ -25,7 +25,7 @@ mod nodes {
         let scaling_config_value = ValueNode::new(scaling_config, Some(&change_observer));
         let mut image_scaling_node = ImageScalingNode::new(Some(&change_observer));
 
-        connect(scaling_config_value.output.clone(), image_scaling_node.scaling_config.clone());
+        connect(scaling_config_value.output.clone(), image_scaling_node.input_scaling_config.clone());
         connect(image_value.output.clone(), image_scaling_node.image.clone());
 
         let _ = image_value.on_ready();
@@ -33,7 +33,13 @@ mod nodes {
 
         let result = image_scaling_node.on_update();
 
-        Ok(assert!(result.is_ok()))
+        let _ = image_value.on_ready();
+
+        let result2 = image_scaling_node.on_update();
+
+
+        Ok(assert!(result.is_ok()));
+        Ok(assert!(result2.is_ok()))
 
     }
     

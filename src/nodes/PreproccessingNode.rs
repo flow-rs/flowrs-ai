@@ -41,6 +41,9 @@ impl Node for PreproccessingNode
     fn on_update(&mut self) -> Result<(), UpdateError> {
         if let Ok(input) = self.input.next(){
             let output = preproccessing_input(input);
+        }else{
+            //return Err(UpdateError::Other(anyhow::Error::msg(
+            //    "Unable to get image to process",)));
         }
 
         Ok(())

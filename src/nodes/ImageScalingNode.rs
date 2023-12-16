@@ -5,7 +5,6 @@ use flowrs::{
     connection::{Input, Output},
     node::{Node, UpdateError, ChangeObserver},
 };
-use serde::{Deserialize, Serialize};
 
 use image::{imageops::FilterType, DynamicImage};
 
@@ -15,14 +14,15 @@ pub struct ScalingConfig {
    pub height: u32
 }
 
-#[derive(RuntimeConnectable, Deserialize, Serialize)]
+#[derive(RuntimeConnectable)]
 pub struct ImageScalingNode
 {
     #[input]
     pub image: Input<DynamicImage>,
-    pub scaling_config: Input<ScalingConfig>,
+    pub input_scaling_config: Input<ScalingConfig>,
     #[output]
     pub output: Output<DynamicImage>,
+    pub scaling_config: Option<ScalingConfig>,
 }
 
 impl ImageScalingNode
@@ -30,29 +30,42 @@ impl ImageScalingNode
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             image: Input::new(),
-            scaling_config: Input::new(),
+            input_scaling_config: Input::new(),
             output: Output::new(change_observer),
+            scaling_config: None,
         }
     }
-}
-fn print_type_of<T>(_: &T) {
-    println!("{}", std::any::type_name::<T>())
 }
 
 impl Node for ImageScalingNode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        let scaling_config = self.scaling_config.next();
-
-        if let Ok(scaling_config) = scaling_config {
-            let image = self.image.next();
-            if let Ok(image) = image{
+        println!("start of on update");
+        if self.scaling_config.is_none(){
+            if let Ok(input_scaling_config) = self.input_scaling_config.next(){
+                self.scaling_config = Some(input_scaling_config);
+            }else{
+                return Err(UpdateError::Other(anyhow::Error::msg(
+                    "Unable to get scaling configuration",)));
+            }
+        }
+        if let Ok(image) = self.image.next(){
+            let result = image_scaling(self.scaling_config.clone().unwrap(), image);
+            result
+        }else{
+            return Err(UpdateError::Other(anyhow::Error::msg(
+                "Unable to get image",)));
+        }
+        /*if let Ok(input_scaling_config) = self.input_scaling_config.next(){
+            //self.scaling_config = Some(input_scaling_config);
+        
+            println!("{:?}", self.scaling_config.clone().unwrap());
+            if let Ok(image) = self.image.next(){
                 let output = image.resize_exact(
-                    scaling_config.width as u32,
-                    scaling_config.height as u32,
+                    self.scaling_config.clone().unwrap().width as u32,
+                    self.scaling_config.clone().unwrap().height as u32,
                     FilterType::CatmullRom,
                 );
-
-                if output.width() == scaling_config.width && output.height() == scaling_config.height{
+                if output.width() == self.scaling_config.clone().unwrap().width && output.height() == self.scaling_config.clone().unwrap().height{
                     println!("Resized image dimensions: {} x {}", output.width(), output.height());
                 }else{
                     return Err(UpdateError::Other(anyhow::Error::msg(
@@ -62,12 +75,28 @@ impl Node for ImageScalingNode {
                 return Err(UpdateError::Other(anyhow::Error::msg(
                     "Unable to get image",)));
             }
-        }else{
+    }else{
             return Err(UpdateError::Other(anyhow::Error::msg(
-                "Unable to get the scaling configuration",)));
+            "Unable to get the scaling configuration",)));
         }
-
-        Ok(())
+    
+    Ok(())
+    }
+    */
     }
 }
 
+fn image_scaling(scaling_conf: ScalingConfig, image: DynamicImage)-> Result<(), UpdateError>{
+    let output = image.resize_exact(
+        scaling_conf.width as u32,
+        scaling_conf.height as u32,
+        FilterType::CatmullRom,
+    );
+    if output.width() == scaling_conf.width && output.height() == scaling_conf.height{
+        println!("Resized image dimensions: {} x {}", output.width(), output.height());
+    }else{
+        return Err(UpdateError::Other(anyhow::Error::msg(
+            "Resizing was unsuccessful",)));
+    }
+    Ok(())
+}
