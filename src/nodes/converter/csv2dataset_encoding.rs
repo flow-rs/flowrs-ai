@@ -95,7 +95,7 @@ where
                 let mut data_ndarray: Array2<String> = reader.deserialize_array2_dynamic().unwrap(); // Use unwrap() for simplicity, handle errors as needed
             
 
-                // Separating Nominal and Other Data:
+                // Separate nominal, ordinal and other data:
                 let mut nominal_data: Vec<Vec<String>> = Vec::new();
                 let mut ordinal_data: Vec<Vec<String>> = Vec::new();
                 let mut other_data: Vec<Vec<T>> = Vec::new();
@@ -110,16 +110,16 @@ where
                     }
                 }
 
+                // label encoding on ordinal data
                 let mut label_encoded_ordinals: Vec<Vec<T>> = Vec::new();
                 for ordinal in ordinal_data.iter() {
                     label_encoded_ordinals.push(label_encode(&ordinal));
                 }
 
-                // Example usage:
+                // one-hot encoding on nominal data
                 let mut one_hot_encoded_nominals: Vec<Array2<T>> = Vec::new();
                 let mut one_hot_feature_names: Vec<String> = Vec::new();
-
-                // Assuming `nominal_data` and `config.nominals` are defined somewhere
+                
                 for (nominal, feature_name) in nominal_data.iter().zip(config.nominals.iter()) {
                     let (one_hot_encoding, feature_names) = one_hot_encode(nominal, feature_name.to_string());
                     one_hot_encoded_nominals.push(one_hot_encoding);
@@ -129,25 +129,32 @@ where
                 // Converting Data to ndarrays:
                 let nominal_records: Array2<T> = concatenate_arrays(one_hot_encoded_nominals);
                 let ordinal_records: Array2<T> = Array2::from_shape_vec((label_encoded_ordinals.len(), headers.len()), label_encoded_ordinals.into_iter().flatten().collect()).unwrap();
-                let other_records: Array2<T> = Array2::from_shape_vec((other_data.len(), headers.len()), other_data.into_iter().flatten().collect()).unwrap();
+                let other_records: Array2<T> = Array2::from_shape_vec((other_data.len(), headers.len()),other_data.into_iter().flatten().collect(),).unwrap();
 
-                let combined_records: Array2<T> = concatenate![
-                    Axis(0),
-                    nominal_records,
-                    ordinal_records,
-                    other_records
-                ];
-
+                // Combine records based on whether nominal_records is empty
+                let combined_records: Array2<T> = if nominal_records.is_empty() {
+                    concatenate![
+                        Axis(0),
+                        ordinal_records,
+                        other_records
+                    ]
+                } else {
+                    concatenate![
+                        Axis(0),
+                        nominal_records,
+                        ordinal_records,
+                        other_records
+                    ]
+                };
+                // combine feature names
                 let mut combined_feature_names: Vec<String> = Vec::new();
                 combined_feature_names.extend(one_hot_feature_names);
                 combined_feature_names.extend(config.ordinals);
                 combined_feature_names.extend(config.others);
 
+                // convert to DatasetBase with feature names
                 let encoded_dataset:DatasetBase<ArrayBase<OwnedRepr<T>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(combined_records.t().to_owned()).with_feature_names(combined_feature_names);
                 println!("Encoded dataset: {:?}", encoded_dataset);
-
-                //////////////////////////////////////////////////////////////////////////////
-
 
                 self.output.send(encoded_dataset).map_err(|e| UpdateError::Other(e.into()))?;
                 Ok(())
@@ -162,16 +169,16 @@ where
 }
 
 
-#[test]
-fn input_output_test() -> Result<(), UpdateError> {
+#[test]fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let test_data_input = String::from("Feate1,Feature2,Feature3,F4,F5,F6\n1,2,3,1,2,11\n4,5,6,1,5,3\n7,8,9,1,2,3\n10,8,9,1,6,4\n12,8,9,1,2,3\n7,8,9,1,2,3");
+
+    let test_data_input = String::from("Age,Food,Rating,Height,Place,Level\n33,Chicken,bad,1.75,Munich,low\n35,Biryani,ok,1.66,London,middle\n74,Kebab,good,1.84,Berlin,high\n62,Chicken,ok,1.63,Munich,middle\n55,Humus,bad,1.94,Berlin,middle\n19,Chicken,good,1.75,Munich,low");
     let test_config_input = CSVToEncodedDatasetConfig{
         separator: b',',
         has_feature_names: true,
-        nominals: vec!["Feate1".to_string(), "Feature2".to_string()],
-        ordinals: vec!["F5".to_string(), "F6".to_string()],
-        others: vec!["Feature3".to_string(), "F4".to_string()]
+        nominals: vec!["Food".to_string(), "Place".to_string()],
+        ordinals: vec!["Rating".to_string(), "Level".to_string()],
+        others: vec!["Age".to_string(), "Height".to_string()]
     };
 
     let mut and: CSVToEncodedDatasetNode<f64> = CSVToEncodedDatasetNode::new(Some(&change_observer));
@@ -181,15 +188,75 @@ fn input_output_test() -> Result<(), UpdateError> {
     and.config_input.send(test_config_input)?;
     and.on_update()?;
 
-    let expected: Array2<f64> = array![[1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 3.0, 1.0],
-                                        [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 6.0, 1.0],
-                                        [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 9.0, 1.0],
-                                        [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 2.0, 9.0, 1.0],
-                                        [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 9.0, 1.0],
-                                        [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 9.0, 1.0]];
+    let expected: Array2<f64> = array![[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 33.0, 1.75],
+                                        [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 35.0, 1.66],
+                                        [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 2.0, 74.0, 1.84],
+                                        [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 62.0, 1.63],
+                                        [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 55.0, 1.94],
+                                        [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 2.0, 0.0, 19.0, 1.75]];
     let actual: Array2<f64> = mock_output.next()?.records;
     
-    Ok(assert!(expected == actual))
+    Ok(assert!(actual == expected))
+}
+
+#[test]fn no_ordinals_test() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+
+    let test_data_input = String::from("Age,Food,Rating,Height,Place,Level\n33,Chicken,bad,1.75,Munich,low\n35,Biryani,ok,1.66,London,middle\n74,Kebab,good,1.84,Berlin,high\n62,Chicken,ok,1.63,Munich,middle\n55,Humus,bad,1.94,Berlin,middle\n19,Chicken,good,1.75,Munich,low");
+    let test_config_input = CSVToEncodedDatasetConfig{
+        separator: b',',
+        has_feature_names: true,
+        nominals: vec!["Food".to_string(), "Place".to_string()],
+        ordinals: vec![],
+        others: vec!["Age".to_string(), "Height".to_string()]
+    };
+
+    let mut and: CSVToEncodedDatasetNode<f64> = CSVToEncodedDatasetNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(and.output.clone(), mock_output.clone());
+    and.data_input.send(test_data_input)?;
+    and.config_input.send(test_config_input)?;
+    and.on_update()?;
+
+    let expected: Array2<f64> = array![[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 33.0, 1.75],
+                                        [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 35.0, 1.66],
+                                        [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 74.0, 1.84],
+                                        [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 62.0, 1.63],
+                                        [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 55.0, 1.94],
+                                        [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 19.0, 1.75]];
+    let actual: Array2<f64> = mock_output.next()?.records;
+    
+    Ok(assert!(actual == expected))
+}
+
+#[test]fn no_nominals_test() -> Result<(), UpdateError> {
+    let change_observer = ChangeObserver::new();
+
+    let test_data_input = String::from("Age,Food,Rating,Height,Place,Level\n33,Chicken,bad,1.75,Munich,low\n35,Biryani,ok,1.66,London,middle\n74,Kebab,good,1.84,Berlin,high\n62,Chicken,ok,1.63,Munich,middle\n55,Humus,bad,1.94,Berlin,middle\n19,Chicken,good,1.75,Munich,low");
+    let test_config_input = CSVToEncodedDatasetConfig{
+        separator: b',',
+        has_feature_names: true,
+        nominals: vec![],
+        ordinals: vec!["Rating".to_string(), "Level".to_string()],
+        others: vec!["Age".to_string(), "Height".to_string()]
+    };
+
+    let mut and: CSVToEncodedDatasetNode<f64> = CSVToEncodedDatasetNode::new(Some(&change_observer));
+    let mock_output = flowrs::connection::Edge::new();
+    flowrs::connection::connect(and.output.clone(), mock_output.clone());
+    and.data_input.send(test_data_input)?;
+    and.config_input.send(test_config_input)?;
+    and.on_update()?;
+
+    let expected: Array2<f64> = array![[0.0, 0.0, 33.0, 1.75],
+                                        [1.0, 1.0, 35.0, 1.66],
+                                        [2.0, 2.0, 74.0, 1.84],
+                                        [1.0, 1.0, 62.0, 1.63],
+                                        [0.0, 1.0, 55.0, 1.94],
+                                        [2.0, 0.0, 19.0, 1.75]];
+    let actual: Array2<f64> = mock_output.next()?.records;
+    
+    Ok(assert!(actual == expected))
 }
 
 fn label_encode<T>(input: &Vec<String>) -> Vec<T> 
@@ -197,7 +264,6 @@ where
     T: Clone + Copy,
     f64: Into<T>
 {
-
     // Create a HashMap to store the mapping of unique strings to labels
     let mut label_mapping: HashMap<&String, T> = HashMap::new();
 
@@ -257,7 +323,7 @@ where
 {
     // Check if the vector is not empty
     if arrays.is_empty() {
-        panic!("Input vector is empty");
+        return Array2::zeros((0, 0));
     }
 
     // Get the shape of the first array
