@@ -42,8 +42,8 @@ impl Node for PreproccessingNode
         if let Ok(input) = self.input.next(){
             let output = preproccessing_input(input);
         }else{
-            //return Err(UpdateError::Other(anyhow::Error::msg(
-            //    "Unable to get image to process",)));
+            return Err(UpdateError::Other(anyhow::Error::msg(
+                "Unable to get image to process",)));
         }
 
         Ok(())
@@ -55,10 +55,6 @@ fn print_type_of<T>(_: &T) {
 }
 
 fn preproccessing_input(image: DynamicImage) -> Result<ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>, UpdateError>{
-    //let input_path = "C:/Users/Marcel/LRZ Sync+Share/Master/3_Semester/Hauptseminar_2/flow-rs/flowrs-ai/src/example_pic/crosswalk.jpg";
-    //let img = image::open(input_path).expect("Failed to open image"); // img = input
-    //let img = self.input;
-
     let resized_image = image;
 
     let (width, height) = resized_image.dimensions();
@@ -74,8 +70,7 @@ fn preproccessing_input(image: DynamicImage) -> Result<ArrayBase<OwnedRepr<f32>,
         input_tensor[[0, 1, y, x]] = (g as f32) / 255.0;
         input_tensor[[0, 2, y, x]] = (b as f32) / 255.0;
     };
-    print_type_of(&input_tensor);
-    
+    //let output = input_tensor.clone();
     Ok(input_tensor)
 }
 

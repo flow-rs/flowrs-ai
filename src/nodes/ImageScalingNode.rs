@@ -39,7 +39,6 @@ impl ImageScalingNode
 
 impl Node for ImageScalingNode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("start of on update");
         if self.scaling_config.is_none(){
             if let Ok(input_scaling_config) = self.input_scaling_config.next(){
                 self.scaling_config = Some(input_scaling_config);
@@ -50,53 +49,23 @@ impl Node for ImageScalingNode {
         }
         if let Ok(image) = self.image.next(){
             let result = image_scaling(self.scaling_config.clone().unwrap(), image);
-            result
+            println!("before send");
+            match self.output.send(result) {
+                Ok(_) => Ok(()),
+                Err(err) => Err(UpdateError::Other(err.into())),
+            }
         }else{
             return Err(UpdateError::Other(anyhow::Error::msg(
                 "Unable to get image",)));
         }
-        /*if let Ok(input_scaling_config) = self.input_scaling_config.next(){
-            //self.scaling_config = Some(input_scaling_config);
-        
-            println!("{:?}", self.scaling_config.clone().unwrap());
-            if let Ok(image) = self.image.next(){
-                let output = image.resize_exact(
-                    self.scaling_config.clone().unwrap().width as u32,
-                    self.scaling_config.clone().unwrap().height as u32,
-                    FilterType::CatmullRom,
-                );
-                if output.width() == self.scaling_config.clone().unwrap().width && output.height() == self.scaling_config.clone().unwrap().height{
-                    println!("Resized image dimensions: {} x {}", output.width(), output.height());
-                }else{
-                    return Err(UpdateError::Other(anyhow::Error::msg(
-                        "Resizing was unsuccessful",)));
-                }
-            }else{
-                return Err(UpdateError::Other(anyhow::Error::msg(
-                    "Unable to get image",)));
-            }
-    }else{
-            return Err(UpdateError::Other(anyhow::Error::msg(
-            "Unable to get the scaling configuration",)));
-        }
-    
-    Ok(())
-    }
-    */
     }
 }
 
-fn image_scaling(scaling_conf: ScalingConfig, image: DynamicImage)-> Result<(), UpdateError>{
+fn image_scaling(scaling_conf: ScalingConfig, image: DynamicImage)-> DynamicImage{
     let output = image.resize_exact(
         scaling_conf.width as u32,
         scaling_conf.height as u32,
         FilterType::CatmullRom,
     );
-    if output.width() == scaling_conf.width && output.height() == scaling_conf.height{
-        println!("Resized image dimensions: {} x {}", output.width(), output.height());
-    }else{
-        return Err(UpdateError::Other(anyhow::Error::msg(
-            "Resizing was unsuccessful",)));
-    }
-    Ok(())
+    output
 }

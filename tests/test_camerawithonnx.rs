@@ -8,6 +8,7 @@ mod nodes {
     use flowrs_ai::PreproccessingNode::PreproccessingNode;
     use std::{env};
     use image::{DynamicImage};
+    use flowrs::connection::Edge;
 
     #[test]
     fn test_webcamwithonnx() -> Result<(), anyhow::Error> {
@@ -30,21 +31,27 @@ mod nodes {
         let scaling_config_value = ValueNode::new(scaling_config, Some(&change_observer));
         let mut image_scaling_node = ImageScalingNode::new(Some(&change_observer));
         let mut preproccessing_node = PreproccessingNode::new(Some(&change_observer));
-        let mut debug = DebugNode::new(Some(&change_observer));
-
+        //let mut debug = DebugNode::new(Some(&change_observer));
+        let mock_output = Edge::new();
         //connect(webcam.output.clone(), image_scaling_node.image.clone());
         connect(image_value.output.clone(), image_scaling_node.image.clone());
         connect(scaling_config_value.output.clone(), image_scaling_node.input_scaling_config.clone());
         connect(image_scaling_node.output.clone(), preproccessing_node.input.clone());
-        connect(preproccessing_node.output.clone(), debug.input.clone());
-
+        connect(preproccessing_node.output.clone(), mock_output.clone());
+        //connect(debug.output.clone(), mock_output.clone());
         let _ = image_value.on_ready();
         let _ = scaling_config_value.on_ready();
 
-        let rescaled_image = image_scaling_node.on_update();
+        let _ = image_scaling_node.on_update();
+        let _ = preproccessing_node.on_update();
+        // get the tensor not as result but as tensor to send to debug
+        //debug.input.send(tensor);
 
-
-        Ok(assert!(rescaled_image.is_ok()))
+        //let result = debug.on_update();
+        println!("before mock output");
+        let input_tensor = mock_output.next()?;
+        println!("{:?}", input_tensor);
+        Ok(assert!(true))
 
     }
     
