@@ -49,7 +49,6 @@ impl Node for ImageScalingNode {
         }
         if let Ok(image) = self.image.next(){
             let result = image_scaling(self.scaling_config.clone().unwrap(), image);
-            println!("before send");
             match self.output.send(result) {
                 Ok(_) => Ok(()),
                 Err(err) => Err(UpdateError::Other(err.into())),

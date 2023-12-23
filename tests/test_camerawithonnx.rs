@@ -48,9 +48,9 @@ mod nodes {
         //debug.input.send(tensor);
 
         //let result = debug.on_update();
-        println!("before mock output");
+
         let input_tensor = mock_output.next()?;
-        println!("{:?}", input_tensor);
+        // condition must be changed, but it is not finished yet.
         Ok(assert!(true))
 
     }
