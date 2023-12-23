@@ -1,4 +1,8 @@
 mod nodes {
+    use flowrs_ai::model::ModelNode;
+    use flowrs::{node::{ChangeObserver, Node}};
+=======
+mod nodes {
 
     use flowrs_ai::model::{ModelNode, ModelConfig};
     use flowrs::{node::{ChangeObserver, Node}, connection::connect};
@@ -7,7 +11,6 @@ mod nodes {
     use ndarray::{ArrayD, s};
     use std::{env};
     use image::{imageops::FilterType, ImageBuffer, Pixel, Rgb};
-
 
     #[test]
     fn should_run_model() -> Result<(), anyhow::Error> {
@@ -82,5 +85,5 @@ mod nodes {
     
         array.into_dyn()
     }
-    
 }
+
