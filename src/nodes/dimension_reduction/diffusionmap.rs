@@ -83,7 +83,7 @@ where
             .method(KernelMethod::Gaussian(gaussian))
             .transform(data.records.view());
 
-            let mapped_kernel = DiffusionMap::<f32>::params(self.config.embedding_size)
+            let mapped_kernel = DiffusionMap::<T>::params(self.config.embedding_size)
             .steps(self.config.steps)
             .transform(&kernel)
             .unwrap();
