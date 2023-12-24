@@ -3,9 +3,11 @@ mod nodes {
 
     use flowrs_ai::model::{ModelNode, ModelConfig};
     use flowrs::{node::{ChangeObserver, Node}, connection::{connect, Edge}};
+    use futures_executor::block_on;
 
     use ndarray::{ArrayD, s};
-    use std::{env, time::Instant};
+    use wonnx::{Session, utils::InputTensor};
+    use std::{env, time::Instant, collections::HashMap};
     use image::{imageops::FilterType, ImageBuffer, Pixel, Rgb};
 
     #[test]
@@ -36,6 +38,25 @@ mod nodes {
         let elapsed = now.elapsed().as_millis();
         // then
         println!("Result: {}ms per executions \n", elapsed / num_executions);
+    }
+
+    #[test]
+    fn benchmark_wonnx_raw() {
+        // given
+        let model_path = "src/models/opt-squeeze.onnx";
+        let model_input = load_image();
+        let session = block_on(Session::from_path(model_path)).unwrap();
+        let num_executions = 100;
+        let mut input_data: HashMap<String, InputTensor> = HashMap::new();
+        input_data.insert("data".to_string(), model_input.as_slice().unwrap().into());
+        // when
+        let now = Instant::now();
+        for _ in 1..num_executions {
+            let _ = block_on(session.run(&input_data));
+        }
+        let elapsed = now.elapsed().as_millis();
+        // then
+        println!("Results: {}ms per execution \n", elapsed / num_executions);
     }
 
     fn load_image() -> ArrayD<f32> {
