@@ -2,7 +2,7 @@
 mod nodes {
 
     use flowrs_ai::model::{ModelNode, ModelConfig};
-    use flowrs::{node::{ChangeObserver, Node}, connection::connect};
+    use flowrs::{node::{ChangeObserver, Node}, connection::{connect, Edge}};
     use flowrs_std::value::ValueNode;
 
     use ndarray::{ArrayD, s};
@@ -11,6 +11,7 @@ mod nodes {
 
     #[test]
     fn should_run_model() -> Result<(), anyhow::Error> {
+        // given
         let model_config = ModelConfig {
             model_path: "src/models/opt-squeeze.onnx".to_string(),
             model_base64: "".to_string(),
@@ -19,21 +20,17 @@ mod nodes {
 
         let change_observer: ChangeObserver = ChangeObserver::new();  
 
-        let image_value = ValueNode::new(model_input, Some(&change_observer));
-        let config_value = ValueNode::new(model_config, Some(&change_observer));
         let mut model_node = ModelNode::new(Some(&change_observer));
-
-        connect(config_value.output.clone(), model_node.input_model_config.clone());
-        connect(image_value.output.clone(), model_node.model_input.clone());
-
-        let _ = config_value.on_ready();
+        let mock_output = Edge::new();
+        connect(model_node.output.clone(), mock_output.clone());
+        // when
+        let _ = model_node.input_model_config.send(model_config.clone());
         let _ = model_node.on_update();
-
-        let _ = image_value.on_ready();
-
-        let result = model_node.on_update();
-
-        Ok(assert!(result.is_ok()))
+        let _ = model_node.model_input.send(model_input.clone());
+        let _ = model_node.on_update();
+        // then
+        let actual = mock_output.next();
+        Ok(assert!(actual.is_ok()))
     }
 
     #[test]
@@ -44,13 +41,10 @@ mod nodes {
             model_base64: "".to_string(),
         };
         let change_observer: ChangeObserver = ChangeObserver::new();  
-        let value_node = ValueNode::new(model_config, Some(&change_observer));
         let mut model_node = ModelNode::new(Some(&change_observer));
-        connect(value_node.output.clone(), model_node.input_model_config.clone());
-        let _ = value_node.on_ready();
+        let _ = model_node.input_model_config.send(model_config.clone());
         let _ = model_node.on_update();
         Ok(assert!(path == model_node.model_config.unwrap().model_path))
-        //Ok(assert!(model_node.session.borrow()))
     }
 
 
