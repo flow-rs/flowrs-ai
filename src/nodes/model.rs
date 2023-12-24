@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::path::Path;
 use std::{fmt::Debug, collections::HashMap};
 
@@ -99,7 +100,7 @@ impl Node for ModelNode
         }
         if let Ok(model_input) = self.model_input.next() {
             let output_tensor = self.execute_model(model_input);
-            let result = Vec::try_from(output_tensor.unwrap().clone()).unwrap();
+            let result: Vec<f32> = output_tensor.unwrap().try_into().unwrap();
             let _ = self.output.send(Array::from_vec(result).into_dyn());
         }
         Ok(())
