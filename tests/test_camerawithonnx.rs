@@ -6,6 +6,7 @@ mod nodes {
     //use flowrs_img::webcam::{WebcamNode, WebcamNodeConfig};
     use flowrs_ai::ImageScalingNode::{ImageScalingNode, ScalingConfig};
     use flowrs_ai::PreproccessingNode::PreproccessingNode;
+    use flowrs_ai::model::{ModelNode, ModelConfig};
     use std::{env};
     use image::{DynamicImage};
     use flowrs::connection::Edge;
@@ -22,6 +23,10 @@ mod nodes {
             width: 224,
             height: 224,
         };
+        let model_config = ModelConfig {
+            model_path: "src/models/opt-squeeze.onnx".to_string(),
+            model_base64: "".to_string(),
+        };
         let image_path = env::current_dir()
         .expect("Failed to obtain current directory")
         .join("src/example_pic/crosswalk.jpg");
@@ -31,25 +36,27 @@ mod nodes {
         let scaling_config_value = ValueNode::new(scaling_config, Some(&change_observer));
         let mut image_scaling_node = ImageScalingNode::new(Some(&change_observer));
         let mut preproccessing_node = PreproccessingNode::new(Some(&change_observer));
+        let mut model_node = ModelNode::new(Some(&change_observer));
         //let mut debug = DebugNode::new(Some(&change_observer));
         let mock_output = Edge::new();
         //connect(webcam.output.clone(), image_scaling_node.image.clone());
         connect(image_value.output.clone(), image_scaling_node.image.clone());
         connect(scaling_config_value.output.clone(), image_scaling_node.input_scaling_config.clone());
         connect(image_scaling_node.output.clone(), preproccessing_node.input.clone());
-        connect(preproccessing_node.output.clone(), mock_output.clone());
+        connect(preproccessing_node.output.clone(), model_node.model_input.clone());
+        connect(model_node.output.clone(), mock_output.clone());
         //connect(debug.output.clone(), mock_output.clone());
         let _ = image_value.on_ready();
         let _ = scaling_config_value.on_ready();
 
         let _ = image_scaling_node.on_update();
         let _ = preproccessing_node.on_update();
-        // get the tensor not as result but as tensor to send to debug
+        let _ = model_node.on_update();
         //debug.input.send(tensor);
 
         //let result = debug.on_update();
 
-        let input_tensor = mock_output.next()?;
+        let result_model = mock_output.next()?;
         // condition must be changed, but it is not finished yet.
         Ok(assert!(true))
 
