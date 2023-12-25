@@ -1,56 +1,70 @@
-use std::{fmt::Debug};
+use std::fmt::Debug;
 
 use flowrs::RuntimeConnectable;
 use flowrs::{
     connection::{Input, Output},
-    node::{Node, UpdateError, ChangeObserver},
+    node::{ChangeObserver, Node, UpdateError},
 };
-use ndarray::{ 
-    ArrayD,
-    Dim,
-    IxDynImpl
-};
+use ndarray::{ArrayD, Dim, IxDynImpl, ShapeError};
 
 #[derive(Clone, Debug)]
-pub struct ReshapeConfig {
-   pub dimension: Dim<IxDynImpl>
+pub struct ArrayReshapeNodeConfig {
+    pub dimension: Dim<IxDynImpl>,
 }
 
 #[derive(RuntimeConnectable)]
-pub struct ArrayReshapeNode
-{
+pub struct ArrayReshapeNode {
     #[input]
-    pub input: Input<ArrayD<f32>>,
-    pub reshape_config: Input<ReshapeConfig>,
+    pub array_input: Input<ArrayD<f32>>,
+
+    #[input]
+    pub config_input: Input<ArrayReshapeNodeConfig>,
+
     #[output]
-    pub output: Output<ArrayD<f32>>,
+    pub array_output: Output<ArrayD<f32>>,
+
+    config_object: Option<ArrayReshapeNodeConfig>,
 }
 
-impl ArrayReshapeNode
-{
+impl ArrayReshapeNode {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
-            input: Input::new(),
-            reshape_config: Input::new(),
-            output: Output::new(change_observer),
+            array_input: Input::new(),
+            config_input: Input::new(),
+            array_output: Output::new(change_observer),
+            config_object: Option::None,
         }
+    }
+    pub fn reshape(&self, input: ArrayD<f32>) -> Result<ArrayD<f32>, ShapeError> {
+        let output = input.into_shape(self.config_object.clone().unwrap().dimension);
+        return output;
     }
 }
 
-
-impl Node for ArrayReshapeNode
-{
+impl Node for ArrayReshapeNode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        let reshape_config = self.reshape_config.next();
-        if let Ok(reshape_config) = reshape_config{
-            let output = self.input.reshape(reshape_config.dimension);
-            if output.shape() == reshape_config.dimension{
-                println!("Reshaped successfully with dimension: {}", output.shape());
-        }   else{
-                //Err(err) => println!("Error: Could not reshape the input");
+        if let Ok(config) = self.config_input.next() {
+            self.config_object = Some(config);
         }
+
+        if self.config_object.is_none() {
+            return Err(UpdateError::Other(anyhow::Error::msg(
+                "No config to reshape array.",
+            )));
         }
-        Ok(())
+
+        if let Ok(array) = self.array_input.next() {
+            match array.into_shape(self.config_object.clone().unwrap().dimension) {
+                Ok(reshaped_array) => match self.array_output.clone().send(reshaped_array) {
+                    Ok(_) => Ok(()),
+                    Err(err) => Err(UpdateError::Other(err.into())),
+                },
+                Err(err) => Err(UpdateError::Other(err.into())),
+            }
+        } else {
+            Err(UpdateError::Other(anyhow::Error::msg(
+                "No array given to input.",
+            )))
+        }
     }
 }
-
