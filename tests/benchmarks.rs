@@ -1,14 +1,17 @@
+
 mod nodes {
 
     use flowrs_ai::model::{ModelNode, ModelConfig};
     use flowrs::{node::{ChangeObserver, Node}, connection::{connect, Edge}};
+    use futures_executor::block_on;
 
     use ndarray::{ArrayD, s};
-    use std::{env};
+    use wonnx::{Session, utils::InputTensor};
+    use std::{env, time::Instant, collections::HashMap};
     use image::{imageops::FilterType, ImageBuffer, Pixel, Rgb};
 
     #[test]
-    fn should_run_model() -> Result<(), anyhow::Error> {
+    fn benchmark_model_node() {
         // given
         let model_config = ModelConfig {
             model_path: "src/models/opt-squeeze.onnx".to_string(),
@@ -21,30 +24,40 @@ mod nodes {
         let mut model_node = ModelNode::new(Some(&change_observer));
         let mock_output = Edge::new();
         connect(model_node.output.clone(), mock_output.clone());
+        let num_executions = 100;
         // when
         let _ = model_node.input_model_config.send(model_config.clone());
         let _ = model_node.on_update();
-        let _ = model_node.model_input.send(model_input.clone());
-        let _ = model_node.on_update();
+        println!("Start benchmarks with {} iterations", num_executions);
+        println!("...");
+        let now = Instant::now();
+        for _ in 1..num_executions {
+            let _ = model_node.model_input.send(model_input.clone()); 
+            let _ = model_node.on_update();
+        }
+        let elapsed = now.elapsed().as_millis();
         // then
-        let actual = mock_output.next();
-        Ok(assert!(actual.is_ok()))
+        println!("Result: {}ms per executions \n", elapsed / num_executions);
     }
 
     #[test]
-    fn should_load_model_path() -> Result<(), anyhow::Error> {
-        let path = "src/models/opt-squeeze.onnx";
-        let model_config = ModelConfig {
-            model_path: path.to_string(),
-            model_base64: "".to_string(),
-        };
-        let change_observer: ChangeObserver = ChangeObserver::new();  
-        let mut model_node = ModelNode::new(Some(&change_observer));
-        let _ = model_node.input_model_config.send(model_config.clone());
-        let _ = model_node.on_update();
-        Ok(assert!(path == model_node.model_config.unwrap().model_path))
+    fn benchmark_wonnx_raw() {
+        // given
+        let model_path = "src/models/opt-squeeze.onnx";
+        let model_input = load_image();
+        let session = block_on(Session::from_path(model_path)).unwrap();
+        let num_executions = 100;
+        let mut input_data: HashMap<String, InputTensor> = HashMap::new();
+        input_data.insert("data".to_string(), model_input.as_slice().unwrap().into());
+        // when
+        let now = Instant::now();
+        for _ in 1..num_executions {
+            let _ = block_on(session.run(&input_data));
+        }
+        let elapsed = now.elapsed().as_millis();
+        // then
+        println!("Results: {}ms per execution \n", elapsed / num_executions);
     }
-
 
     fn load_image() -> ArrayD<f32> {
         let image_path = env::current_dir()
@@ -75,4 +88,3 @@ mod nodes {
         array.into_dyn()
     }
 }
-
