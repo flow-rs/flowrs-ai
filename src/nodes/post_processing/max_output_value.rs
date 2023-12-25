@@ -3,12 +3,12 @@ use flowrs::{
     connection::{Input, Output},
     node::{Node, UpdateError, ChangeObserver},
 };
-use ndarray::{Array1};
+use ndarray::{ArrayD};
 
 #[derive(RuntimeConnectable)]
 pub struct MaxOutputNode {
     #[input]
-    pub output_tensor: Input<Array1<f32>>,
+    pub output_tensor: Input<ArrayD<f32>>,
     #[input]
     pub input_classes: Input<Vec<u8>>,
     pub classes: Option<Vec<String>>,
@@ -38,7 +38,7 @@ impl MaxOutputNode
         self.classes = Some(class_vec);
     }
 
-    fn get_max_output(&mut self, tensor: Array1<f32>) -> Result<String, String> {
+    fn get_max_output(&mut self, tensor: ArrayD<f32>) -> Result<String, String> {
         if let Some(classes) = &self.classes {
             if tensor.len() != classes.len() {
                 return Err("Input tensor and classes need to have the same size!".to_string());
@@ -66,8 +66,6 @@ impl MaxOutputNode
 impl Node for MaxOutputNode
 {
     fn on_update(&mut self) -> anyhow::Result<(), UpdateError> {
-        print!("ON UPDATE!!!!!!!!!!!!!!!!!!!!");
-        
         if let Ok(input_classes) = self.input_classes.next() {
             self.read_classes(input_classes);
         }
