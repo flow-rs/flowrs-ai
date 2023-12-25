@@ -2,7 +2,7 @@ mod nodes {
     use flowrs_ai::PreproccessingNode::PreproccessingNode;
     use flowrs::{node::{ChangeObserver, Node}};
     use std::env;
-    use image::{imageops::FilterType, DynamicImage};
+    use image::{imageops::FilterType};
     use flowrs_std::value::ValueNode;
     use flowrs::connection::connect;
     use flowrs::connection::Edge;

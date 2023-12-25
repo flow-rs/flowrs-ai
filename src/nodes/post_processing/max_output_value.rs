@@ -1,3 +1,8 @@
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
+
 use flowrs::RuntimeConnectable;
 use flowrs::{
     connection::{Input, Output},
@@ -10,7 +15,7 @@ pub struct MaxOutputNode {
     #[input]
     pub output_tensor: Input<Array1<f32>>,
     #[input]
-    pub input_classes: Input<Vec<String>>,
+    pub input_classes: Input<Vec<u8>>,
     pub classes: Option<Vec<String>>,
     #[output]
     pub output_class: Output<String>,
@@ -25,6 +30,17 @@ impl MaxOutputNode
             classes: None,
             output_class: Output::new(change_observer),
         }
+    }
+
+    fn read_classes(&mut self, input_classes: Vec<u8>) {
+        let file_content_str = String::from_utf8_lossy(&input_classes);
+    
+        let mut class_vec: Vec<String> = Vec::new();
+    
+        for (index, line) in file_content_str.lines().enumerate() {
+            class_vec.insert(index, line.to_string());
+        }
+        self.classes = Some(class_vec);
     }
 
     fn get_max_output(&mut self, tensor: Array1<f32>) -> Result<String, String> {
@@ -55,8 +71,10 @@ impl MaxOutputNode
 impl Node for MaxOutputNode
 {
     fn on_update(&mut self) -> anyhow::Result<(), UpdateError> {
+        print!("ON UPDATE!!!!!!!!!!!!!!!!!!!!");
+        
         if let Ok(input_classes) = self.input_classes.next() {
-            self.classes = Some(input_classes);
+            self.read_classes(input_classes);
         }
         if let Ok(output_tensor) = self.output_tensor.next() {
             let result = self.get_max_output(output_tensor);
@@ -67,8 +85,7 @@ impl Node for MaxOutputNode
                 Err(e) => {
                     UpdateError::SendError { message: e };
                 }
-            }
-            
+            }            
         }
         Ok(())
     }

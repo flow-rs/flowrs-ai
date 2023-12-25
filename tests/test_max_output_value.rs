@@ -5,7 +5,8 @@ mod nodes {
     #[test]
     fn should_get_max_output() -> Result<(), anyhow::Error> {
         //given
-        let classes = vec!["one".to_string(), "two".to_string(), "three".to_string()];
+        //let classes = vec!["one".to_string(), "two".to_string(), "three".to_string()];
+        let classes = "one\ntwo\nthree".as_bytes().to_vec();
         let tensor = Array1::from_vec(vec![0.1, 0.5, 0.2]);
         let change_observer = ChangeObserver::new();
         let mut max_output_node = MaxOutputNode::new(Some(&change_observer));
