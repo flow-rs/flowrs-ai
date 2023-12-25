@@ -3,7 +3,6 @@ mod nodes {
     use flowrs_std::value::ValueNode;
     use flowrs_ai::ImageScalingNode::{ImageScalingNode, ScalingConfig};
     use std::{env};
-    use image::{DynamicImage};
     use flowrs::connection::Edge;
 
 
@@ -34,7 +33,7 @@ mod nodes {
         let _ = image_value.on_ready();
         let _ = scaling_config_value.on_ready();
 
-        let result = image_scaling_node.on_update();
+        let _ = image_scaling_node.on_update();
 
         let _ = image_value.on_ready();
 
