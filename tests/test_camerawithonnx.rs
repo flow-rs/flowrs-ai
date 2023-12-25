@@ -10,6 +10,7 @@ mod nodes {
     use std::{env};
     use image::{DynamicImage};
     use flowrs::connection::Edge;
+    use flowrs_ai::{max_output_value::MaxOutputNode};
 
     #[test]
     fn test_webcamwithonnx() -> Result<(), anyhow::Error> {
@@ -37,6 +38,9 @@ mod nodes {
         let mut image_scaling_node = ImageScalingNode::new(Some(&change_observer));
         let mut preproccessing_node = PreproccessingNode::new(Some(&change_observer));
         let mut model_node = ModelNode::new(Some(&change_observer));
+        let mut post_processing = MaxOutputNode::new(Some(&change_observer));
+        // get classes from model
+        let input_classes = "";
         //let mut debug = DebugNode::new(Some(&change_observer));
         let mock_output = Edge::new();
         //connect(webcam.output.clone(), image_scaling_node.image.clone());
@@ -45,18 +49,25 @@ mod nodes {
         connect(image_scaling_node.output.clone(), preproccessing_node.input.clone());
         connect(preproccessing_node.output.clone(), model_node.model_input.clone());
         connect(model_node.output.clone(), mock_output.clone());
+        //connect(model_node.output.clone(), post_processing.output_tensor.clone());
+        //connect(post_processing.output.clone(), mock_output.clone());
         //connect(debug.output.clone(), mock_output.clone());
+        let _ = model_node.input_model_config.send(model_config);
+        //let _ = post_processing.input_classes.send(input_classes);
         let _ = image_value.on_ready();
         let _ = scaling_config_value.on_ready();
 
         let _ = image_scaling_node.on_update();
         let _ = preproccessing_node.on_update();
         let _ = model_node.on_update();
+        //let _ = post_processing.on_update();
         //debug.input.send(tensor);
 
         //let result = debug.on_update();
 
-        let result_model = mock_output.next()?;
+        let tensor = mock_output.next()?;
+
+        print!("{:?}", tensor);
         // condition must be changed, but it is not finished yet.
         Ok(assert!(true))
 

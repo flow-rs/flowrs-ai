@@ -61,6 +61,7 @@ fn preproccessing_input(image: DynamicImage) -> ArrayBase<OwnedRepr<f32>, Dim<Ix
     let resized_image = image;
 
     let (width, height) = resized_image.dimensions();
+    
 
     let dim = IxDyn(&[1,3,width as usize, height as usize]);
     let mut input_tensor: ArrayD<f32> = ArrayD::<f32>::zeros(dim);
