@@ -59,27 +59,26 @@ where
 
 impl Node for PCANode<f64> {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: PCANode has received an update!");
 
-        // Neue Config kommt an
+        // receiving config
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: PCANode has received config: {}", config.embedding_size);
-
+            println!("[DEBUG::PCANode] New Config:\n embedding_size: {}", config.embedding_size);
             self.config = config;
         }
 
-        // Daten kommen an
+        // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: PCANode has received data!");
+            println!("[DEBUG::PCANode] Received Data:\n {}", data.records.clone());
 
             let embedding = Pca::params(self.config.embedding_size)
                 .fit(&data)
                 .unwrap();
-            let red_dataset = embedding.predict(data);
+            let red_dataset_target = embedding.predict(data);
             
-            let myoutput= DatasetBase::from(red_dataset.targets.clone());
+            let red_dataset= DatasetBase::from(red_dataset_target.targets.clone());
 
-            self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
+            println!("[DEBUG::PCANode] Sent Data:\n {}", red_dataset.records.clone());
+            self.output.send(red_dataset).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }
@@ -88,29 +87,28 @@ impl Node for PCANode<f64> {
 
 impl Node for PCANode<f32> {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: PCANode has received an update!");
 
-        // Neue Config kommt an
+        // receiving config
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: PCANode has received config: {}", config.embedding_size);
-
+            println!("[DEBUG::PCANode] New Config:\n embedding_size: {}", config.embedding_size);
             self.config = config;
         }
 
         // Daten kommen an
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: PCANode has received data!");
+            println!("[DEBUG::PCANode] Received Data:\n {}", data.records.clone());
 
             let data_f64 = DatasetBase::from(data.records.mapv(|x| x as f64));
 
             let embedding = Pca::params(self.config.embedding_size)
                 .fit(&data_f64)
                 .unwrap();
-            let red_dataset = embedding.predict(data_f64);
+            let red_dataset_target = embedding.predict(data_f64);
             
-            let myoutput= DatasetBase::from(red_dataset.targets.mapv(|x| x as f32));
-
-            self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
+            let red_dataset= DatasetBase::from(red_dataset_target.targets.mapv(|x| x as f32));
+            
+            println!("[DEBUG::PCANode] Sent Data:\n {}", red_dataset.records.clone());
+            self.output.send(red_dataset).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }

@@ -2,10 +2,9 @@ use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Outp
 use flowrs::RuntimeConnectable;
 
 use ndarray::{Array2, array, Array1};
-use linfa::traits::Transformer;
+use linfa::{traits::Transformer, DatasetBase, Float};
 use linfa_preprocessing::norm_scaling::NormScaler;
 use serde::{Deserialize, Serialize};
-use linfa::prelude::*;
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
@@ -40,15 +39,15 @@ where
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
+        // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: L1NormScalerNode has received an update!");//println!("JW-Debug: L1NormScalerNode has received: {}.", node_data.records);
+            println!("[DEBUG::L1NormScalerNode] Received Data:\n {}", data.records.clone());
 
             let scaler = NormScaler::l1();
-            let normalized_data = scaler.transform(data);
-    
-            self.output.send(normalized_data).map_err(|e| UpdateError::Other(e.into()))?;
-            println!("JW-Debug: L1NormScalerNode has sent an output!");
-
+            let scaled_data = scaler.transform(data);
+            
+            println!("[DEBUG::L1NormScalerNode] Sent Data:\n {}", scaled_data.records.clone());
+            self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }
@@ -63,7 +62,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     [5.0, 6.0, 7.0, 8.0],
     [7.0, 4.0, 1.0, 9.0]];
 
-    let dataset = Dataset::from(test_input.clone());
+    let dataset = DatasetBase::from(test_input.clone());
 
     let mut and: L1NormScalerNode<f64> = L1NormScalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();

@@ -64,26 +64,25 @@ where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: TsneNode has received an update!");
 
-        // Neue Config kommt an
+        // received config
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: TsneNode has received config: {}, {}, {}", config.embedding_size, config.perplexity, config.approx_threshold);
-
+            println!("[DEBUG::TsneNode] New Config:\n embedding_size: {},\n steps: {},\n approx_threshold: {}", config.embedding_size, config.perplexity, config.approx_threshold);
             self.config = config;
         }
 
-        // Daten kommen an
+        // received data
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: TsneNode has received data!");
+            println!("[DEBUG::TsneNode] Received Data:\n {}", data.records.clone());
 
-            let dataset = TSneParams::embedding_size(self.config.embedding_size)
-            .perplexity(T::from(self.config.perplexity).unwrap())
-            .approx_threshold(T::from(self.config.approx_threshold).unwrap())
-            .transform(data.clone())
-            .unwrap();
+            let red_dataset = TSneParams::embedding_size(self.config.embedding_size)
+                .perplexity(T::from(self.config.perplexity).unwrap())
+                .approx_threshold(T::from(self.config.approx_threshold).unwrap())
+                .transform(data.clone())
+                .unwrap();
 
-            self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
+            println!("[DEBUG::TsneNode] Sent Data:\n {}", red_dataset.records.clone());
+            self.output.send(red_dataset).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }

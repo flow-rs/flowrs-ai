@@ -63,26 +63,24 @@ where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: DbscanNode has received an update!");
 
-        // Neue Config kommt an
+        // receiving config
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: DbscanNode has received config: {}, {}", config.min_points, config.tolerance);
-
+            println!("[DEBUG::DbscanNode] New Config:\n min_points: {},\n tolerance: {}", config.min_points, config.tolerance);
             self.config = config;
         }
 
-        // Daten kommen an
+        // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: DbscanNode has received data!"); //: \n Records: {} \n Targets: {}.", dataset.records, dataset.targets);
+            println!("[DEBUG::DbscanNode] Received Data:\n {}", data.records.clone());
 
             let clusters = Dbscan::params(self.config.min_points)
                 .tolerance(T::from(self.config.tolerance).unwrap())
                 .transform(data)
                 .unwrap();
 
+            println!("[DEBUG::DbscanNode] Sent Data:\n Records: {},\n Targets: {:?}", clusters.records.clone(), clusters.targets.clone());
             self.output.send(clusters).map_err(|e| UpdateError::Other(e.into()))?;
-            println!("JW-Debug: DbscanNode has sent an output!");
         }
 
         Ok(())

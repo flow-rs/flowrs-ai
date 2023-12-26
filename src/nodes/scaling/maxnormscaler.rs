@@ -40,15 +40,15 @@ where
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
+        // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: MaxNormScalerNode has received data!"); //println!("JW-Debug: MaxNormScalerNode has received: {}.", node_data.records);
+            println!("[DEBUG::MaxNormScalerNode] Received Data:\n {}", data.records.clone());
 
             let scaler = NormScaler::max();
-            let normalized_data = scaler.transform(data);
+            let scaled_data = scaler.transform(data);
     
-            self.output.send(normalized_data).map_err(|e| UpdateError::Other(e.into()))?;
-            println!("JW-Debug: MaxNormScalerNode has sent an output!");
-
+            println!("[DEBUG::MaxNormScalerNode] Sent Data:\n {}", scaled_data.records.clone());
+            self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }

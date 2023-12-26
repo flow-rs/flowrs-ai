@@ -63,23 +63,22 @@ where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: MinMaxRangeScaleNode has received an update!");
 
-        // Neue Config kommt an
+        // receiving config
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: MinMaxRangeScaleNode has received config: {}, {}", config.min, config.max);
-
+            println!("[DEBUG::MinMaxRangeScalerNode] New Config:\n min: {},\n max: {}", config.min, config.max);
             self.config = config;
         }
 
-        // Daten kommen an
+        // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: DbscanNode has received data!"); //: \n Records: {} \n Targets: {}.", dataset.records, dataset.targets);
+            println!("[DEBUG::MinMaxRangeScalerNode] Received Data:\n {}", data.records.clone());
 
             let scaler = LinearScaler::min_max_range(T::from(self.config.min).unwrap(), T::from(self.config.max).unwrap()).fit(&data).unwrap();
-            let dataset = scaler.transform(data);
+            let scaled_data = scaler.transform(data);
 
-            self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
+            println!("[DEBUG::MinMaxRangeScalerNode] Sent Data:\n {}", scaled_data.records.clone());
+            self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }

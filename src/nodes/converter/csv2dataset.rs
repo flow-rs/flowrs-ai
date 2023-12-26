@@ -62,18 +62,19 @@ where
 
 impl<T> Node for CSVToDatasetNode<T>
 where
-    T: Clone + Send + DeserializeOwned
+    T: Clone + Send + DeserializeOwned + std::fmt::Display // for debugging
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: CSVToDatasetNode has received an update!");
-     
+        
+        // receiving config
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: CSVToDatasetNode has received config: {}, {}", config.separator, config.has_feature_names);
+            println!("[DEBUG::CSVToDatasetNode] New Config:\n separator: {},\n has_feature_names: {}", config.separator, config.has_feature_names);
             self.config = config;
         }
 
+        // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: CSVToDatasetNode has received data!");
+            println!("[DEBUG::CSVToDatasetNode] Received Data:\n {}", data);
             
             // convert String to DatasetBase
             let mut reader = ReaderBuilder::new()
@@ -91,9 +92,11 @@ where
                 };
                 let dataset_with_features = dataset.with_feature_names(feature_names);
 
+                println!("[DEBUG::CSVToDatasetNode] Sent Data:\n {}", dataset_with_features.records.clone());
                 self.output.send(dataset_with_features).map_err(|e| UpdateError::Other(e.into()))?;
                 return Ok(());
             }
+            println!("[DEBUG::CSVToDatasetNode] Sent Data:\n {}", dataset.records.clone());
             self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())

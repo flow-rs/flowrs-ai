@@ -30,14 +30,14 @@ pub struct DiffusionMapNode<T>
 where
     T: Clone
 {
-    #[output]
-    pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
+    #[input]
+    pub config_input: Input<DiffusionMapConfig>,
 
     #[input]
     pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
-    #[input]
-    pub config_input: Input<DiffusionMapConfig>,
+    #[output]
+    pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
     config: DiffusionMapConfig
 }
@@ -63,36 +63,32 @@ where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: DiffusionMapNode has received an update!");
 
-        // Neue Config kommt an
+        // receiving config
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: DbscanNode has received config: {}, {}", config.embedding_size, config.steps);
-
+            println!("[DEBUG::DbscanNode] New Config:\n embedding_size: {},\n steps: {}", config.embedding_size, config.steps);
             self.config = config;
         }
 
-        // Daten kommen an
+        // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: DiffusionMapNode has received an update!");//println!("JW-Debug DiffusionMapNode has received: {}.", node_data.records);
-            
-            let gaussian = T::from(2.0).unwrap();
+            println!("[DEBUG::DbscanNode] Received Data:\n {}", data.records.clone());
 
             let kernel = Kernel::params()
-            .kind(KernelType::Sparse(3))
-            .method(KernelMethod::Gaussian(gaussian))
-            .transform(data.records.view());
+                .kind(KernelType::Sparse(3))
+                .method(KernelMethod::Gaussian(T::from(2.0).unwrap()))
+                .transform(data.records.view());
 
             let mapped_kernel = DiffusionMap::<T>::params(self.config.embedding_size)
-            .steps(self.config.steps)
-            .transform(&kernel)
-            .unwrap();
+                .steps(self.config.steps)
+                .transform(&kernel)
+                .unwrap();
 
             let embedding = mapped_kernel.embedding();
-            let embedding_result = DatasetBase::from(embedding.clone());
+            let red_dataset = DatasetBase::from(embedding.clone());
 
-            self.output.send(embedding_result).map_err(|e| UpdateError::Other(e.into()))?;
-            println!("JW-Debug: DiffusionMapNode has sent an output!");
+            println!("[DEBUG::DbscanNode] Sent Data:\n {}", red_dataset.records.clone());
+            self.output.send(red_dataset).map_err(|e| UpdateError::Other(e.into()))?;
         }
 
         Ok(())

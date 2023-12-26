@@ -40,14 +40,15 @@ where
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
+        // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: L2NormScalerNode has received an update!");//println!("JW-Debug: L2NormScalerNode has received: {}.", node_data.records);
+            println!("[DEBUG::L2NormScalerNode] Received Data:\n {}", data.records.clone());
 
             let scaler = NormScaler::l1();
-            let normalized_data = scaler.transform(data);
-    
-            self.output.send(normalized_data).map_err(|e| UpdateError::Other(e.into()))?;
-            println!("JW-Debug: L2NormScalerNode has sent an output!");
+            let scaled_data = scaler.transform(data);
+            
+            println!("[DEBUG::L2NormScalerNode] Sent Data:\n {}", scaled_data.records.clone());
+            self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }

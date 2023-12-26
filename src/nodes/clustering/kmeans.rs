@@ -65,18 +65,16 @@ where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: KmeansNode has received an update!");
 
-        // Neue Config kommt an
+        // receiving config
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: KmeansNode has received config: {}, {}, {}", config.max_n_iterations, config.num_of_dim, config.tolerance);
-
+            println!("[DEBUG::KmeansNode] New Config:\n num_of_dim: {},\n max_n_iterations: {},\n tolerance: {}", config.num_of_dim, config.max_n_iterations, config.tolerance);
             self.config = config;
         }
 
-        // Daten kommen an
+        // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: KmeansNode has received data!");
+            println!("[DEBUG::KmeansNode] Received Data:\n {}", data.records.clone());
 
             let records = data.records.clone();
 
@@ -88,10 +86,10 @@ where
 
             let result = model.predict(data);
 
-            let myoutput = DatasetBase::new(records, result.targets.clone());
+            let clusters = DatasetBase::new(records, result.targets.clone());
 
-            self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
-            println!("JW-Debug: KmeansNode has sent an output!");
+            println!("[DEBUG::KmeansNode] Sent Data:\n Records: {},\n Targets: {}", clusters.records.clone(), clusters.targets.clone());
+            self.output.send(clusters).map_err(|e| UpdateError::Other(e.into()))?;
         }        
         Ok(())
     }

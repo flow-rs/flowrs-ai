@@ -41,14 +41,15 @@ where
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
+        // receiving data
         if let Ok(data) = self.data_input.next() {
-        println!("JW-Debug: MinMaxScalerNode has received an update!");//println!("JW-Debug: MinMaxScalerNode has received: {}.", node_data.records);
+            println!("[DEBUG::MinMaxScalerNode] Received Data:\n {}", data.records.clone());
 
             let scaler = LinearScaler::min_max().fit(&data).unwrap();
-            let dataset = scaler.transform(data);
+            let scaled_data = scaler.transform(data);
 
-            self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
-            println!("JW-Debug: MinMaxScalerNode has sent an output!");
+            println!("[DEBUG::MinMaxScalerNode] Sent Data:\n {}", scaled_data.records.clone());
+            self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }

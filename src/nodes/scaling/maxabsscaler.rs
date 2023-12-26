@@ -41,15 +41,15 @@ where
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
+        // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: MaxAbsScalerNode has received an update!");//println!("JW-Debug: MaxAbsScalerNode has received: {}.", dataset.records);
+            println!("[DEBUG::MaxAbsSclerNode] Received Data:\n {}", data.records.clone());
 
             let scaler = LinearScaler::max_abs().fit(&data).unwrap();
-            let dataset = scaler.transform(data);
-
-            self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
-            println!("JW-Debug: MaxAbsScalerNode has sent an output!");
-
+            let scaled_data = scaler.transform(data);
+            
+            println!("[DEBUG::MaxAbsSclerNode] Sent Data:\n {}", scaled_data.records.clone());
+            self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }

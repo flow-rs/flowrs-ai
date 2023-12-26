@@ -39,14 +39,15 @@ where
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
+        // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: StandardScalerNode has received an update!");
+            println!("[DEBUG::StandardScalerNode] Received Data:\n {}", data.records.clone());
 
             let scaler = LinearScaler::standard().fit(&data).unwrap();
-            let standard_scaled_data = scaler.transform(data);
+            let scaled_data = scaler.transform(data);
 
-            self.output.send(standard_scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
-            println!("JW-Debug: StandardScalerNode has sent an output!");
+            println!("[DEBUG::StandardScalerNode] Sent Data:\n {}", scaled_data.records.clone());
+            self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }
