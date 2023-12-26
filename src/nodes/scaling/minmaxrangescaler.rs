@@ -9,20 +9,14 @@ use serde::{Deserialize, Serialize};
 
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct MinMaxRangeScalerConfig<T>
-where
-    T: Float,
-{
-   pub min: T,
-   pub max: T
+pub struct MinMaxRangeScalerConfig {
+   pub min: f64,
+   pub max: f64
 }
 
 
-impl<T> MinMaxRangeScalerConfig<T>
-where
-    T: Float
-{
-    pub fn new(min: T, max: T) -> Self {
+impl MinMaxRangeScalerConfig {
+    pub fn new(min: f64, max: f64) -> Self {
         MinMaxRangeScalerConfig {
             min,
             max,
@@ -32,7 +26,7 @@ where
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct MinMaxRangeScaleNode<T> 
+pub struct MinMaxRangeScalerNode<T> 
 where
     T: Clone + Float
 {
@@ -42,32 +36,29 @@ where
     pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub config_input: Input<MinMaxRangeScalerConfig<T>>,
+    pub config_input: Input<MinMaxRangeScalerConfig>,
 
-    config: MinMaxRangeScalerConfig<T>
+    config: MinMaxRangeScalerConfig
 }
 
 
-impl<T> MinMaxRangeScaleNode<T> 
+impl<T> MinMaxRangeScalerNode<T> 
 where
     T: Clone + Float
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
-        let min = T::from(0.0).unwrap();
-        let max = T::from(1.0).unwrap();
-
         Self {
             output: Output::new(change_observer),
             data_input: Input::new(),
             config_input: Input::new(),
-            config: MinMaxRangeScalerConfig::new(min, max)
+            config: MinMaxRangeScalerConfig::new(0., 1.)
 
         }
     }
 }
 
 
-impl<T> Node for MinMaxRangeScaleNode<T> 
+impl<T> Node for MinMaxRangeScalerNode<T> 
 where 
     T: Clone + Send + Float
 {
@@ -85,7 +76,7 @@ where
         if let Ok(data) = self.data_input.next() {
             println!("JW-Debug: DbscanNode has received data!"); //: \n Records: {} \n Targets: {}.", dataset.records, dataset.targets);
 
-            let scaler = LinearScaler::min_max_range(self.config.min, self.config.max).fit(&data).unwrap();
+            let scaler = LinearScaler::min_max_range(T::from(self.config.min).unwrap(), T::from(self.config.max).unwrap()).fit(&data).unwrap();
             let dataset = scaler.transform(data);
 
             self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
@@ -114,7 +105,7 @@ fn new_config_test() -> Result<(), UpdateError> {
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
     let dataset = Dataset::from(test_input.clone());
 
-    let mut test_node: MinMaxRangeScaleNode<f64> = MinMaxRangeScaleNode::new(Some(&change_observer));
+    let mut test_node: MinMaxRangeScalerNode<f64> = MinMaxRangeScalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
     test_node.data_input.send(dataset)?;
@@ -154,7 +145,7 @@ fn default_config_test() -> Result<(), UpdateError> {
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
     let dataset = Dataset::from(test_input.clone());
 
-    let mut test_node: MinMaxRangeScaleNode<f64> = MinMaxRangeScaleNode::new(Some(&change_observer));
+    let mut test_node: MinMaxRangeScalerNode<f64> = MinMaxRangeScalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(test_node.output.clone(), mock_output.clone());
     test_node.data_input.send(dataset)?;
@@ -180,7 +171,7 @@ fn default_config_test() -> Result<(), UpdateError> {
 #[test]
 fn test_f32() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let mut node: MinMaxRangeScaleNode<f32> = MinMaxRangeScaleNode::new(Some(&change_observer));
+    let mut node: MinMaxRangeScalerNode<f32> = MinMaxRangeScalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 
@@ -207,7 +198,7 @@ fn test_f32() -> Result<(), UpdateError> {
 #[test]
 fn test_f64() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let mut node: MinMaxRangeScaleNode<f64> = MinMaxRangeScaleNode::new(Some(&change_observer));
+    let mut node: MinMaxRangeScalerNode<f64> = MinMaxRangeScalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 

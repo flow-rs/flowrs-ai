@@ -9,21 +9,15 @@ use serde::{Deserialize, Serialize};
 
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct TsneConfig<T> 
-where
-    T: Clone + Float
-{
+pub struct TsneConfig {
    pub embedding_size: usize,
-   pub perplexity: T,
-   pub approx_threshold: T,
+   pub perplexity: f64,
+   pub approx_threshold: f64,
 }  
 
 
-impl<T> TsneConfig<T>
-where 
-T: Clone + Float
-{
-    pub fn new(embedding_size: usize, perplexity: T, approx_threshold: T) -> Self {
+impl TsneConfig {
+    pub fn new(embedding_size: usize, perplexity: f64, approx_threshold: f64) -> Self {
         TsneConfig {
             embedding_size,
             perplexity,
@@ -45,9 +39,9 @@ where
     pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
     #[input]
-    pub config_input: Input<TsneConfig<T>>,
+    pub config_input: Input<TsneConfig>,
     
-    config: TsneConfig<T>
+    config: TsneConfig
 }
 
 
@@ -56,14 +50,11 @@ where
     T: Clone + Float
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
-        let perplexity = T::from(1.0).unwrap();
-        let approx_threshold = T::from(0.1).unwrap();
-
         Self {
             output: Output::new(change_observer),
             data_input: Input::new(),
             config_input: Input::new(),
-            config: TsneConfig::new(2, perplexity, approx_threshold)
+            config: TsneConfig::new(2, 1., 0.1)
         }
     }
 }
@@ -88,8 +79,8 @@ where
             println!("JW-Debug: TsneNode has received data!");
 
             let dataset = TSneParams::embedding_size(self.config.embedding_size)
-            .perplexity(self.config.perplexity)
-            .approx_threshold(self.config.approx_threshold)
+            .perplexity(T::from(self.config.perplexity).unwrap())
+            .approx_threshold(T::from(self.config.approx_threshold).unwrap())
             .transform(data.clone())
             .unwrap();
 

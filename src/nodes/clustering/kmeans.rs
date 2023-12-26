@@ -9,21 +9,15 @@ use serde::{Deserialize, Serialize};
 
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct KmeansConfig <T>
-where
-    T: Clone + Float
-{
+pub struct KmeansConfig {
    pub num_of_dim: usize,
    pub max_n_iterations: u64,
-   pub tolerance: T
+   pub tolerance: f64
 }
 
 
-impl<T> KmeansConfig<T> 
-where
-    T: Clone + Float
-{
-    pub fn new(num_of_dim: usize, max_n_iterations: u64, tolerance: T) -> Self {
+impl KmeansConfig {
+    pub fn new(num_of_dim: usize, max_n_iterations: u64, tolerance: f64) -> Self {
         KmeansConfig {
             num_of_dim,
             max_n_iterations,
@@ -39,7 +33,7 @@ where
     T: Clone + Float
 {
     #[input]
-    pub config_input: Input<KmeansConfig<T>>,
+    pub config_input: Input<KmeansConfig>,
 
     #[output]
     pub output: Output<DatasetBase<Array2<T>, Array1<usize>>>,
@@ -47,7 +41,7 @@ where
     #[input]
     pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>, 
 
-    config: KmeansConfig<T>
+    config: KmeansConfig
 }
 
 
@@ -56,13 +50,11 @@ where
     T: Clone + Float
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
-        let tolerance = T::from(1e-5).unwrap();
-
         Self {
             output: Output::new(change_observer),
             data_input: Input::new(),
             config_input: Input::new(),
-            config: KmeansConfig::new(3, 200, tolerance)
+            config: KmeansConfig::new(3, 200, 1e-5)
         }
     }
 }
@@ -90,7 +82,7 @@ where
 
             let model = KMeans::params(self.config.num_of_dim)
                 .max_n_iterations(self.config.max_n_iterations)
-                .tolerance(self.config.tolerance)
+                .tolerance(T::from(self.config.tolerance).unwrap())
                 .fit(&data)
                 .expect("Error while fitting KMeans to the dataset");
 
