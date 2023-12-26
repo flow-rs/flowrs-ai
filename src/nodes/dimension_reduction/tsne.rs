@@ -1,9 +1,8 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::{Array2, OwnedRepr};
-use ndarray::prelude::*;
-use linfa::{traits::Transformer, DatasetBase, Dataset, Float};
+use ndarray::{Array2, Array1, array};
+use linfa::{traits::Transformer, DatasetBase, Float};
 use linfa_tsne::TSneParams;
 use serde::{Deserialize, Serialize};
 
@@ -109,7 +108,7 @@ fn input_output_test() -> Result<(), UpdateError> {
                                          [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
                                          [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
-    let dataset: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = Dataset::from(test_input.clone());
+    let dataset = DatasetBase::from(test_input.clone());
     let mut and: TsneNode<f64> = TsneNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
@@ -144,7 +143,7 @@ fn default_config_test() -> Result<(), UpdateError> {
                                          [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
                                          [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
-    let dataset: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = Dataset::from(test_input.clone());
+    let dataset = DatasetBase::from(test_input.clone());
     let mut and: TsneNode<f64> = TsneNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());

@@ -1,7 +1,7 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::{Array2, Array1, array, ArrayBase, OwnedRepr, Dim};
+use ndarray::{Array2, Array1, array};
 use linfa::traits::Transformer;
 use linfa_preprocessing::norm_scaling::NormScaler;
 use serde::{Deserialize, Serialize};
@@ -76,8 +76,8 @@ fn input_output_test() -> Result<(), UpdateError> {
     [0.625, 0.75, 0.875, 1.0],
     [0.7777777777777778, 0.4444444444444444, 0.1111111111111111, 1.0]];
 
-    let actual: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = mock_output.next()?;
-    let expected: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(expected_data.clone(), expected_data.clone());
+    let actual = mock_output.next()?;
+    let expected = DatasetBase::new(expected_data.clone(), expected_data.clone());
 
     Ok(assert!(expected.records == actual.records))
 }

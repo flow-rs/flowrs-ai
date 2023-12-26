@@ -1,10 +1,10 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::prelude::*;
-use linfa::{traits::Transformer, DatasetBase, Dataset, Float};
+use linfa::{traits::Transformer, DatasetBase, Float};
 use linfa_kernel::{Kernel, KernelType, KernelMethod};
 use linfa_reduction::DiffusionMap;
+use ndarray::{Array2, Array1, array};
 use serde::{Deserialize, Serialize};
 
 
@@ -117,7 +117,7 @@ fn new_config_test() -> Result<(), UpdateError> {
                                          [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
                                          [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
-    let test_dataset = Dataset::from(test_input.clone());
+    let test_dataset = DatasetBase::from(test_input.clone());
 
     let mut test_node: DiffusionMapNode<f32> = DiffusionMapNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
@@ -160,7 +160,7 @@ fn default_config_test() -> Result<(), UpdateError> {
                                          [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
                                          [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
-    let test_dataset = Dataset::from(test_input.clone());
+    let test_dataset = DatasetBase::from(test_input.clone());
 
     let mut test_node: DiffusionMapNode<f64> = DiffusionMapNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();

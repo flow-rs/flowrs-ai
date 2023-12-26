@@ -2,7 +2,7 @@ use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Outp
 use flowrs::RuntimeConnectable;
 
 use ndarray::{Array2, Array1, array};
-use linfa::{dataset::DatasetBase, Dataset, Float};
+use linfa::{dataset::DatasetBase, Float};
 use linfa::traits::{Fit, Transformer};
 use linfa_preprocessing::linear_scaling::LinearScaler;
 use serde::{Deserialize, Serialize};
@@ -68,7 +68,7 @@ fn input_output_test() -> Result<(), UpdateError> {
                                          [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
                                          [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
-    let dataset = Dataset::from(test_input.clone());
+    let dataset = DatasetBase::from(test_input.clone());
 
     let mut test_node: MinMaxScalerNode<f64> = MinMaxScalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();

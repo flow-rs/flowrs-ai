@@ -1,9 +1,9 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use linfa::prelude::*;
-use ndarray::{prelude::*};
-use linfa::traits::{Fit, Predict};
+
+use ndarray::{Array1, Array2, array};
+use linfa::{traits::{Fit, Predict}, Float, DatasetBase};
 use linfa_clustering::KMeans;
 use serde::{Deserialize, Serialize};
 
