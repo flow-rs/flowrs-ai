@@ -9,7 +9,7 @@ mod nodes {
     fn should_return_reshaped_array() -> Result<(), ReceiveError> {
         let change_observer: ChangeObserver = ChangeObserver::new();
         let array_shape_config = ArrayReshapeNodeConfig {
-            dimension: IxDyn(&[1, 2, 3]),
+            dimension: vec![1, 2, 3],
         };
         let mut reshape_node = ArrayReshapeNode::new(Some(&change_observer));
 
@@ -26,8 +26,8 @@ mod nodes {
             .send(ArrayD::<f32>::zeros(IxDyn(&[3, 2, 1])));
         let _ = reshape_node.config_input.send(array_shape_config);
 
-        let update_retsult = reshape_node.on_update();
-        if let Err(err) = update_retsult {
+        let update_result = reshape_node.on_update();
+        if let Err(err) = update_result {
             return Err(ReceiveError::Other(err.into()));
         }
 

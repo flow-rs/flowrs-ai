@@ -5,14 +5,15 @@ use flowrs::{
     connection::{Input, Output},
     node::{ChangeObserver, Node, UpdateError},
 };
-use ndarray::{ArrayD, Dim, IxDynImpl, ShapeError};
+use ndarray::{ArrayD, IxDyn, ShapeError};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ArrayReshapeNodeConfig {
-    pub dimension: Dim<IxDynImpl>,
+    pub dimension: Vec<usize>,
 }
 
-#[derive(RuntimeConnectable)]
+#[derive(RuntimeConnectable, Serialize, Deserialize)]
 pub struct ArrayReshapeNode {
     #[input]
     pub array_input: Input<ArrayD<f32>>,
@@ -54,7 +55,7 @@ impl Node for ArrayReshapeNode {
         }
 
         if let Ok(array) = self.array_input.next() {
-            match array.into_shape(self.config_object.clone().unwrap().dimension) {
+            match array.into_shape(IxDyn(&self.config_object.clone().unwrap().dimension)) {
                 Ok(reshaped_array) => match self.array_output.clone().send(reshaped_array) {
                     Ok(_) => Ok(()),
                     Err(err) => Err(UpdateError::Other(err.into())),
