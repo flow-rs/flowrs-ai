@@ -6,6 +6,7 @@ use ndarray::{prelude::*};
 use linfa::traits::{Fit, Predict};
 use linfa_clustering::KMeans;
 use serde::{Deserialize, Serialize};
+use log::debug;
 
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -73,18 +74,18 @@ where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: KmeansNode has received an update!");
+        debug!("KmeansNode has received an update!");
 
         // Neue Config kommt an
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: KmeansNode has received config: {}, {}, {}", config.max_n_iterations, config.num_of_dim, config.tolerance);
+            debug!("KmeansNode has received config: {}, {}, {}", config.max_n_iterations, config.num_of_dim, config.tolerance);
 
             self.config = config;
         }
 
         // Daten kommen an
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: KmeansNode has received data!");
+            debug!("KmeansNode has received data!");
 
             let records = data.records.clone();
 
@@ -99,7 +100,7 @@ where
             let myoutput = DatasetBase::new(records, result.targets.clone());
 
             self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
-            println!("JW-Debug: KmeansNode has sent an output!");
+            debug!("KmeansNode has sent an output!");
         }        
         Ok(())
     }

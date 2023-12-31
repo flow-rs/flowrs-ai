@@ -6,6 +6,7 @@ use ndarray::prelude::*;
 use linfa::{traits::Transformer, DatasetBase, Dataset, Float};
 use linfa_tsne::TSneParams;
 use serde::{Deserialize, Serialize};
+use log::debug;
 
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -74,18 +75,18 @@ where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: TsneNode has received an update!");
+        debug!("TsneNode has received an update!");
 
         // Neue Config kommt an
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: TsneNode has received config: {}, {}, {}", config.embedding_size, config.perplexity, config.approx_threshold);
+            debug!("TsneNode has received config: {}, {}, {}", config.embedding_size, config.perplexity, config.approx_threshold);
 
             self.config = config;
         }
 
         // Daten kommen an
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: TsneNode has received data!");
+            debug!("TsneNode has received data!");
 
             let dataset = TSneParams::embedding_size(self.config.embedding_size)
             .perplexity(self.config.perplexity)

@@ -6,6 +6,7 @@ use linfa::{dataset::DatasetBase, Dataset, Float};
 use linfa::traits::{Fit, Transformer};
 use linfa_preprocessing::linear_scaling::LinearScaler;
 use serde::{Deserialize, Serialize};
+use log::debug;
 
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -72,18 +73,18 @@ where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: MinMaxRangeScaleNode has received an update!");
+        debug!("MinMaxRangeScaleNode has received an update!");
 
         // Neue Config kommt an
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: MinMaxRangeScaleNode has received config: {}, {}", config.min, config.max);
+            debug!("MinMaxRangeScaleNode has received config: {}, {}", config.min, config.max);
 
             self.config = config;
         }
 
         // Daten kommen an
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: DbscanNode has received data!"); //: \n Records: {} \n Targets: {}.", dataset.records, dataset.targets);
+            debug!("DbscanNode has received data!");
 
             let scaler = LinearScaler::min_max_range(self.config.min, self.config.max).fit(&data).unwrap();
             let dataset = scaler.transform(data);

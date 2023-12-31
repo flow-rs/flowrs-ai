@@ -6,6 +6,7 @@ use ndarray::Array2;
 use csv::ReaderBuilder;
 use ndarray_csv::Array2Reader;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use log::debug;
 
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -52,7 +53,7 @@ where
             output: Output::new(change_observer),
             data_input: Input::new(),
             config_input: Input::new(),
-            config: CSVToNdarrayConfig::new(b',', false)
+            config: CSVToNdarrayConfig::new(b',', true)
         }
     }
 }
@@ -63,15 +64,15 @@ where
     T: Clone + Send + DeserializeOwned
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: CSVToNdarrayNode has received an update!");
+        debug!("CSVToNdarrayNode has received an update!");
 
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: CSVToNdarrayNode has received config: {}, {}", config.separator, config.has_feature_names);
+            debug!("CSVToNdarrayNode has received config: {}, {}", config.separator, config.has_feature_names);
             self.config = config;
         }
 
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: PCANode has received data!");
+            debug!("PCANode has received data!");
 
             let mut reader = ReaderBuilder::new()
                 .delimiter(self.config.separator)
@@ -92,7 +93,7 @@ fn input_output_test() -> Result<(), UpdateError> {
     let test_input = String::from("1,2,3\n4,5,6\n7,8,9");
 
     let mut and: CSVToNdarrayNode<f64> = CSVToNdarrayNode::new(Some(&change_observer));
-    let mock_output = flowrs::connection::Edge::new();
+    let mock_output: flowrs::connection::Edge<ndarray::prelude::ArrayBase<ndarray::OwnedRepr<f64>, ndarray::prelude::Dim<[usize; 2]>>> = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
     and.data_input.send(test_input)?;
     and.on_update()?;

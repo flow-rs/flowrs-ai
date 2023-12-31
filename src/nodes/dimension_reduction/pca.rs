@@ -6,6 +6,7 @@ use linfa::{Dataset, DatasetBase};
 use linfa_reduction::Pca;
 use linfa::traits::{Fit, Predict};
 use serde::{Deserialize, Serialize};
+use log::debug;
 
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -59,18 +60,18 @@ where
 
 impl Node for PCANode<f64> {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: PCANode has received an update!");
+        debug!("PCANode has received an update!");
 
         // Neue Config kommt an
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: PCANode has received config: {}", config.embedding_size);
+            debug!("PCANode has received config: {}", config.embedding_size);
 
             self.config = config;
         }
 
         // Daten kommen an
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: PCANode has received data!");
+            debug!("PCANode has received data!");
 
             let embedding = Pca::params(self.config.embedding_size)
                 .fit(&data)
@@ -88,18 +89,18 @@ impl Node for PCANode<f64> {
 
 impl Node for PCANode<f32> {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: PCANode has received an update!");
+        debug!("PCANode has received an update!");
 
         // Neue Config kommt an
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: PCANode has received config: {}", config.embedding_size);
+            debug!("PCANode has received config: {}", config.embedding_size);
 
             self.config = config;
         }
 
         // Daten kommen an
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: PCANode has received data!");
+            debug!("PCANode has received data!");
 
             let data_f64 = DatasetBase::from(data.records.mapv(|x| x as f64));
 

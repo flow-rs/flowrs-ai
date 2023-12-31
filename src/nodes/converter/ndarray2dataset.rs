@@ -5,6 +5,7 @@ use ndarray::{Array2, array};
 use ndarray::prelude::*;
 use serde::{Deserialize, Serialize};
 use linfa::prelude::*;
+use log::debug;
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
@@ -40,7 +41,7 @@ where
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: NdarrayToDatasetNode has received an update!");
+            debug!("NdarrayToDatasetNode has received an update!");
 
             let dataset = Dataset::from(data.clone());
 
@@ -67,7 +68,6 @@ fn input_output_test() -> Result<(), UpdateError> {
 
     Ok(assert!(expected == actual.records))
 }
-
 
 #[test]
 fn test_f32() -> Result<(), UpdateError> {

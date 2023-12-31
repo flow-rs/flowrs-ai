@@ -6,6 +6,7 @@ use linfa::{traits::Transformer, DatasetBase, Dataset, Float};
 use linfa_kernel::{Kernel, KernelType, KernelMethod};
 use linfa_reduction::DiffusionMap;
 use serde::{Deserialize, Serialize};
+use log::debug;
 
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -63,18 +64,18 @@ where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: DiffusionMapNode has received an update!");
+        debug!("DiffusionMapNode has received an update!");
 
         // Neue Config kommt an
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: DbscanNode has received config: {}, {}", config.embedding_size, config.steps);
+            debug!("DbscanNode has received config: {}, {}", config.embedding_size, config.steps);
 
             self.config = config;
         }
 
         // Daten kommen an
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: DiffusionMapNode has received an update!");//println!("JW-Debug DiffusionMapNode has received: {}.", node_data.records);
+            debug!("DiffusionMapNode has received an update!");
             
             let gaussian = T::from(2.0).unwrap();
 
@@ -92,7 +93,7 @@ where
             let embedding_result = DatasetBase::from(embedding.clone());
 
             self.output.send(embedding_result).map_err(|e| UpdateError::Other(e.into()))?;
-            println!("JW-Debug: DiffusionMapNode has sent an output!");
+            debug!("DiffusionMapNode has sent an output!");
         }
 
         Ok(())

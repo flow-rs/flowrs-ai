@@ -6,6 +6,7 @@ use ndarray::{prelude::*, OwnedRepr};
 use linfa::traits::{Fit, Transformer};
 use linfa_preprocessing::linear_scaling::LinearScaler;
 use serde::{Deserialize, Serialize};
+use log::debug;
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
@@ -41,13 +42,13 @@ where
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: StandardScalerNode has received an update!");
+            debug!("StandardScalerNode has received an update!");
 
             let scaler = LinearScaler::standard().fit(&data).unwrap();
             let standard_scaled_data = scaler.transform(data);
 
             self.output.send(standard_scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
-            println!("JW-Debug: StandardScalerNode has sent an output!");
+            debug!("StandardScalerNode has sent an output!");
         }
         Ok(())
     }

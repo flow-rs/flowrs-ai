@@ -8,6 +8,7 @@ use csv::ReaderBuilder;
 use ndarray_csv::Array2Reader;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::{collections::{HashMap, HashSet}, str::FromStr, fmt};
+use log::debug;
 
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -57,9 +58,10 @@ where
     f64: Into<T>
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
+        debug!("CSVToEncodedDatasetNode has received an update!");
      
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug CSVToEncodedDatasetNode has received data: {}.", data);
+            debug!("CSVToEncodedDatasetNode has received data: {}.", data);
             self.data_object = Some(data);
         }
 
@@ -69,11 +71,11 @@ where
                 
                 // convert String to DatasetBase
                 let mut reader = ReaderBuilder::new()
-                                                            .delimiter(config.separator)
-                                                            .has_headers(config.has_feature_names)
-                                                            .from_reader(data.as_bytes());
+                                                .delimiter(config.separator)
+                                                .has_headers(config.has_feature_names)
+                                                .from_reader(data.as_bytes());
 
-                println!("JW-Debug CSVToArrayNNode has received config.");
+                debug!("CSVToArrayNNode has received config.");
         
                 // Skip the header row
                 reader.headers().unwrap(); // Use unwrap() for simplicity, handle errors as needed
@@ -154,7 +156,7 @@ where
 
                 // convert to DatasetBase with feature names
                 let encoded_dataset:DatasetBase<ArrayBase<OwnedRepr<T>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(combined_records.t().to_owned()).with_feature_names(combined_feature_names);
-                println!("Encoded dataset: {:?}", encoded_dataset);
+                debug!("Encoded dataset: {:?}", encoded_dataset);
 
                 self.output.send(encoded_dataset).map_err(|e| UpdateError::Other(e.into()))?;
                 Ok(())

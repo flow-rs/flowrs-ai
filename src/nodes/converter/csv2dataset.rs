@@ -8,6 +8,7 @@ use ndarray::Array2;
 use csv::ReaderBuilder;
 use ndarray_csv::Array2Reader;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use log::debug;
 
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -65,15 +66,15 @@ where
     T: Clone + Send + DeserializeOwned
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        println!("JW-Debug: CSVToDatasetNode has received an update!");
+        debug!("CSVToDatasetNode has received an update!");
      
         if let Ok(config) = self.config_input.next() {
-            println!("JW-Debug: CSVToDatasetNode has received config: {}, {}", config.separator, config.has_feature_names);
+            debug!("CSVToDatasetNode has received config: {}, {}", config.separator, config.has_feature_names);
             self.config = config;
         }
 
         if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug: CSVToDatasetNode has received data!");
+            debug!("CSVToDatasetNode has received data!");
             
             // convert String to DatasetBase
             let mut reader = ReaderBuilder::new()
