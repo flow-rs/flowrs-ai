@@ -55,8 +55,8 @@ impl ModelNode
     
     #[cfg(not(target_arch = "wasm32"))]
     fn load_session(&mut self) {
-        let model_file_path = Path::new(env!("CARGO_MANIFEST_DIR")).join(self.model_config.clone().unwrap().model_path);
-        let loaded_session = Some(block_on(Session::from_path(model_file_path)).unwrap());
+        let model_file_path = Path::new(env!("CARGO_MANIFEST_DIR")).join(self.model_config.clone().expect("no model path supplied").model_path);
+        let loaded_session = Some(block_on(Session::from_path(model_file_path)).expect("could not load model"));
         self.session = loaded_session;
     }
     
