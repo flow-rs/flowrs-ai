@@ -13,7 +13,6 @@ use log::debug;
 pub struct EncodingConfig
 {
     pub separator: u8,
-    pub has_feature_names: bool,
     pub nominals: Vec<String>,
     pub ordinals: Vec<String>,
     pub others: Vec<String>
@@ -21,10 +20,9 @@ pub struct EncodingConfig
 
 impl EncodingConfig
 {
-    pub fn new(separator: u8, has_feature_names: bool, nominals: Vec<String>, ordinals: Vec<String>, others: Vec<String>) -> Self {
+    pub fn new(separator: u8, nominals: Vec<String>, ordinals: Vec<String>, others: Vec<String>) -> Self {
         EncodingConfig {
             separator,
-            has_feature_names,
             nominals,
             ordinals,
             others
@@ -58,7 +56,7 @@ where
             data_input: Input::new(),
             config_input: Input::new(),
             output: Output::new(change_observer),
-            config: EncodingConfig::new(b',', true, Vec::new(), Vec::new(), Vec::new())
+            config: EncodingConfig::new(b',', Vec::new(), Vec::new(), Vec::new())
         }
     }
 }
@@ -73,7 +71,7 @@ where
         debug!("CSVToEncodedDatasetNode has received an update!");
      
         if let Ok(config) = self.config_input.next() {
-            debug!("CSVToEncodedDatasetNode has received config: {}, {}, {:?}, {:?}, {:?}", config.separator, config.has_feature_names, config.ordinals, config.nominals, config.others);
+            debug!("CSVToEncodedDatasetNode has received config: {}, {:?}, {:?}, {:?}", config.separator, config.ordinals, config.nominals, config.others);
             self.config = config;
         }
 
@@ -83,7 +81,7 @@ where
             // convert String to DatasetBase
             let mut reader = ReaderBuilder::new()
                                             .delimiter(self.config.separator)
-                                            .has_headers(self.config.has_feature_names)
+                                            .has_headers(true)
                                             .from_reader(data.as_bytes());
 
             debug!("CSVToArrayNNode has received config.");
@@ -185,7 +183,6 @@ where
     let test_data_input = String::from("Age,Food,Rating,Height,Place,Level\n33,Chicken,bad,1.75,Munich,low\n35,Biryani,ok,1.66,London,middle\n74,Kebab,good,1.84,Berlin,high\n62,Chicken,ok,1.63,Munich,middle\n55,Humus,bad,1.94,Berlin,middle\n19,Chicken,good,1.75,Munich,low");
     let test_config_input = EncodingConfig{
         separator: b',',
-        has_feature_names: true,
         nominals: vec!["Food".to_string(), "Place".to_string()],
         ordinals: vec!["Rating".to_string(), "Level".to_string()],
         others: vec!["Age".to_string(), "Height".to_string()]
@@ -215,7 +212,6 @@ where
     let test_data_input = String::from("Age,Food,Rating,Height,Place,Level\n33,Chicken,bad,1.75,Munich,low\n35,Biryani,ok,1.66,London,middle\n74,Kebab,good,1.84,Berlin,high\n62,Chicken,ok,1.63,Munich,middle\n55,Humus,bad,1.94,Berlin,middle\n19,Chicken,good,1.75,Munich,low");
     let test_config_input: EncodingConfig = EncodingConfig{
         separator: b',',
-        has_feature_names: true,
         nominals: vec!["Food".to_string(), "Place".to_string()],
         ordinals: vec![],
         others: vec!["Age".to_string(), "Height".to_string()]
@@ -245,7 +241,6 @@ where
     let test_data_input = String::from("Age,Food,Rating,Height,Place,Level\n33,Chicken,bad,1.75,Munich,low\n35,Biryani,ok,1.66,London,middle\n74,Kebab,good,1.84,Berlin,high\n62,Chicken,ok,1.63,Munich,middle\n55,Humus,bad,1.94,Berlin,middle\n19,Chicken,good,1.75,Munich,low");
     let test_config_input = EncodingConfig{
         separator: b',',
-        has_feature_names: true,
         nominals: vec![],
         ordinals: vec!["Rating".to_string(), "Level".to_string()],
         others: vec!["Age".to_string(), "Height".to_string()]
