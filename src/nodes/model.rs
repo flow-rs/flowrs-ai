@@ -1,4 +1,3 @@
-use std::borrow::Borrow;
 use std::path::Path;
 use std::{fmt::Debug, collections::HashMap};
 
@@ -61,13 +60,41 @@ impl ModelNode
     }
     
     #[cfg(not(target_arch = "wasm32"))]
-    fn execute_model(&mut self, model_input: ArrayD<f32>) -> Option<OutputTensor> {
+    fn execute_model(&mut self, model_input: ArrayD<f32>) -> Result<OutputTensor, String> {
         let mut input_data: HashMap<String, InputTensor> = HashMap::new();
-        input_data.insert("data".to_string(), model_input.as_slice().unwrap().into());
-        let session_ref = self.session.as_ref().unwrap();
-        let result = block_on(session_ref.run(&input_data)).unwrap();
-        let output_tensor = result.into_iter().next().unwrap().1;
-        Some(output_tensor)
+        let input = model_input.as_slice();
+        match input {
+            Some(i) => {
+                input_data.insert("data".to_string(), i.into());
+            }
+            None => {
+                return Err("failed to read model input".to_string())
+            }
+        }
+        
+        let session_ref = self.session.as_ref();
+        match session_ref {
+            Some(session) => {
+                match block_on(session.run(&input_data)) {
+                    Ok(res) => {
+                        match res.into_iter().next() {
+                            Some(output_tensor) => {
+                                return Ok(output_tensor.1)
+                            }
+                            None => {
+                                return Err("could not unwrap result".to_string())
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        return Err(e.to_string())
+                    }
+                }
+            }
+            None => {
+                return Err("could not execute model".to_string())
+            }
+        }
     }
     
     #[cfg(target_arch = "wasm32")]
