@@ -52,10 +52,7 @@ mod nodes {
         .join("src/images/7.jpg");
         println!("Image Path: {:?}", image_path);
     
-        let image_buffer: ImageBuffer<Rgb<u8>, Vec<u8>> = image::open(image_path)
-            .unwrap()
-            .resize_to_fill(224, 224, FilterType::Nearest)
-            .to_rgb8();
+        let image_buffer: ImageBuffer<Rgb<u8>, Vec<u8>> = image::open(image_path).unwrap().resize_to_fill(224, 224, FilterType::Nearest).to_rgb8();
     
         let mut array: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 4]>> = ndarray::Array::from_shape_fn((1, 3, 224, 224), |(_, c, j, i)| {
             let pixel = image_buffer.get_pixel(i as u32, j as u32);

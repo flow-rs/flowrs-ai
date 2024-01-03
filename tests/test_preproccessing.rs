@@ -3,7 +3,6 @@ mod nodes {
     use flowrs::{node::{ChangeObserver, Node}};
     use std::env;
     use image::{imageops::FilterType};
-    use flowrs_std::value::ValueNode;
     use flowrs::connection::connect;
     use flowrs::connection::Edge;
 
@@ -21,13 +20,11 @@ mod nodes {
             FilterType::CatmullRom,
         );
 
-        let image_value = ValueNode::new(image, Some(&change_observer));
         let mock_output = Edge::new();
         let mut preproccessing_node = PreproccessingNode::new(Some(&change_observer));
-        connect(image_value.output.clone(), preproccessing_node.input.clone());
         connect(preproccessing_node.output.clone(), mock_output.clone());
 
-        let _ = image_value.on_ready();
+        let _ = preproccessing_node.input.send(image);
         let result = preproccessing_node.on_update();
         
        Ok(assert!(result.is_ok()))
