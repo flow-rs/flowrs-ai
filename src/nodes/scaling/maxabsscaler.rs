@@ -6,6 +6,7 @@ use linfa::{dataset::DatasetBase, Float};
 use linfa::traits::{Fit, Transformer};
 use linfa_preprocessing::linear_scaling::LinearScaler;
 use serde::{Deserialize, Serialize};
+use log::debug;
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
@@ -43,13 +44,15 @@ where
 
         // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("[DEBUG::MaxAbsSclerNode] Received Data:\n {}", data.records.clone());
+
+            debug!("MaxAbsScalerNode has received an update!");//debug!("MaxAbsScalerNode has received: {}.", dataset.records);
 
             let scaler = LinearScaler::max_abs().fit(&data).unwrap();
-            let scaled_data = scaler.transform(data);
-            
-            println!("[DEBUG::MaxAbsSclerNode] Sent Data:\n {}", scaled_data.records.clone());
-            self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
+            let dataset = scaler.transform(data);
+
+            self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
+            debug!("MaxAbsScalerNode has sent an output!");
+
         }
         Ok(())
     }

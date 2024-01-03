@@ -6,7 +6,7 @@ use linfa::{dataset::DatasetBase, Float};
 use linfa::traits::Transformer;
 use linfa_clustering::Dbscan;
 use serde::{Deserialize, Serialize};
-
+use log::debug;
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct DbscanConfig {
@@ -63,16 +63,26 @@ where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
+        debug!("DbscanNode has received an update!");
+
 
         // receiving config
         if let Ok(config) = self.config_input.next() {
+
             println!("[DEBUG::DbscanNode] New Config:\n min_points: {},\n tolerance: {}", config.min_points, config.tolerance);
+
+            debug!("DbscanNode has received config: {}, {}", config.min_points, config.tolerance);
+
             self.config = config;
         }
 
         // receiving data
         if let Ok(data) = self.data_input.next() {
+
             println!("[DEBUG::DbscanNode] Received Data:\n {}", data.records.clone());
+
+            debug!("DbscanNode has received data!");
+
 
             let clusters = Dbscan::params(self.config.min_points)
                 .tolerance(T::from(self.config.tolerance).unwrap())
@@ -81,6 +91,8 @@ where
 
             println!("[DEBUG::DbscanNode] Sent Data:\n Records: {},\n Targets: {:?}", clusters.records.clone(), clusters.targets.clone());
             self.output.send(clusters).map_err(|e| UpdateError::Other(e.into()))?;
+
+            debug!("DbscanNode has sent an output!");
         }
 
         Ok(())
@@ -139,7 +151,7 @@ fn default_config_test() -> Result<(), UpdateError> {
     let mut and: DbscanNode<f64> = DbscanNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(and.output.clone(), mock_output.clone());
-    and.data_input.send(input_data)?;
+    and.data_input.send(input_data)?; 
     and.on_update()?;
 
     let expected: Array1<Option<usize>> = array![None, None, Some(0), Some(1), Some(2), None, None, Some(0), Some(1), Some(2)];

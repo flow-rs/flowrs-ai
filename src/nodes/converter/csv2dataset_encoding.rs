@@ -1,4 +1,3 @@
-
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
@@ -8,44 +7,56 @@ use csv::ReaderBuilder;
 use ndarray_csv::Array2Reader;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::{collections::{HashMap, HashSet}, str::FromStr, fmt};
-
+use log::debug;
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct CSVToEncodedDatasetConfig {
-   pub separator: u8,
-   pub has_feature_names: bool,
-   nominals: Vec<String>,
-   ordinals: Vec<String>,
-   others: Vec<String>
+pub struct EncodingConfig
+{
+    pub separator: u8,
+    pub nominals: Vec<String>,
+    pub ordinals: Vec<String>,
+    pub others: Vec<String>
+}
+
+impl EncodingConfig
+{
+    pub fn new(separator: u8, nominals: Vec<String>, ordinals: Vec<String>, others: Vec<String>) -> Self {
+        EncodingConfig {
+            separator,
+            nominals,
+            ordinals,
+            others
+        }
+    }
 }
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct CSVToEncodedDatasetNode<T>
 where
-    T: Clone
+    T: Clone + FromStr
 {
-    #[input]
-    pub config_input: Input<CSVToEncodedDatasetConfig>,
-
     #[input]
     pub data_input: Input<String>,
 
     #[output]
     pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
-    data_object: Option<String>
+    #[input]
+    pub config_input: Input<EncodingConfig>,
+
+    config: EncodingConfig
 }
 
 impl<T> CSVToEncodedDatasetNode<T>
 where
-    T: Clone
+    T: Clone + FromStr
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             data_input: Input::new(),
             config_input: Input::new(),
             output: Output::new(change_observer),
-            data_object : Option::None
+            config: EncodingConfig::new(b',', Vec::new(), Vec::new(), Vec::new())
         }
     }
 }
@@ -57,114 +68,111 @@ where
     f64: Into<T>
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
+        debug!("CSVToEncodedDatasetNode has received an update!");
      
-        if let Ok(data) = self.data_input.next() {
-            println!("JW-Debug CSVToEncodedDatasetNode has received data: {}.", data);
-            self.data_object = Some(data);
+        if let Ok(config) = self.config_input.next() {
+            debug!("CSVToEncodedDatasetNode has received config: {}, {:?}, {:?}, {:?}", config.separator, config.ordinals, config.nominals, config.others);
+            self.config = config;
         }
 
-        if let Some(data) = &self.data_object {
-            if let Ok(config) = self.config_input.next() {
+        if let Ok(data) = self.data_input.next() {
+            debug!("CSVToEncodedDatasetNode has received data!");
 
-                
-                // convert String to DatasetBase
-                let mut reader = ReaderBuilder::new()
-                                                            .delimiter(config.separator)
-                                                            .has_headers(config.has_feature_names)
-                                                            .from_reader(data.as_bytes());
+            // convert String to DatasetBase
+            let mut reader = ReaderBuilder::new()
+                                            .delimiter(self.config.separator)
+                                            .has_headers(true)
+                                            .from_reader(data.as_bytes());
 
-                println!("JW-Debug CSVToArrayNNode has received config.");
+            debug!("CSVToArrayNNode has received config.");
+    
+            // Skip the header row
+            reader.headers().unwrap(); // Use unwrap() for simplicity, handle errors as needed
         
-                // Skip the header row
-                reader.headers().unwrap(); // Use unwrap() for simplicity, handle errors as needed
-            
-                let headers: Vec<String> = reader.headers().unwrap().into_iter().map(|header| header.to_string()).collect();
-            
-                let nominal_indices: HashSet<usize> = config.nominals.iter()
-                    .filter_map(|nominal| headers.iter().position(|header| header == nominal))
-                    .collect();
-            
-                let ordinal_indices: HashSet<usize> = config.ordinals.iter()
-                    .filter_map(|ordinal| headers.iter().position(|header| header == ordinal))
-                    .collect();
+            let headers: Vec<String> = reader.headers().unwrap().into_iter().map(|header| header.to_string()).collect();
+        
+            let nominal_indices: HashSet<usize> = self.config.nominals.iter()
+                .filter_map(|nominal| headers.iter().position(|header| header == nominal))
+                .collect();
+        
+            let ordinal_indices: HashSet<usize> = self.config.ordinals.iter()
+                .filter_map(|ordinal| headers.iter().position(|header| header == ordinal))
+                .collect();
 
-                let other_indices: HashSet<usize> = config.others.iter()
-                    .filter_map(|other| headers.iter().position(|header| header == other))
-                    .collect();
+            let other_indices: HashSet<usize> = self.config.others.iter()
+                .filter_map(|other| headers.iter().position(|header| header == other))
+                .collect();
 
-                let mut data_ndarray: Array2<String> = reader.deserialize_array2_dynamic().unwrap(); // Use unwrap() for simplicity, handle errors as needed
+            let mut data_ndarray: Array2<String> = reader.deserialize_array2_dynamic().unwrap(); // Use unwrap() for simplicity, handle errors as needed
+        
+
+            // Separate nominal, ordinal and other data:
+            let mut nominal_data: Vec<Vec<String>> = Vec::new();
+            let mut ordinal_data: Vec<Vec<String>> = Vec::new();
+            let mut other_data: Vec<Vec<T>> = Vec::new();
             
-
-                // Separate nominal, ordinal and other data:
-                let mut nominal_data: Vec<Vec<String>> = Vec::new();
-                let mut ordinal_data: Vec<Vec<String>> = Vec::new();
-                let mut other_data: Vec<Vec<T>> = Vec::new();
-                
-                for (col_idx, col) in data_ndarray.axis_iter_mut(Axis(1)).enumerate() {
-                    if nominal_indices.contains(&col_idx) {
-                        nominal_data.push(col.iter().map(|x| x.to_string()).collect());
-                    } else if ordinal_indices.contains(&col_idx) {
-                        ordinal_data.push(col.iter().map(|x| x.to_string()).collect());
-                    } else if other_indices.contains(&col_idx) {
-                        other_data.push(col.iter().map(|x| x.parse().unwrap()).collect());
-                    }
+            for (col_idx, col) in data_ndarray.axis_iter_mut(Axis(1)).enumerate() {
+                if nominal_indices.contains(&col_idx) {
+                    nominal_data.push(col.iter().map(|x| x.to_string()).collect());
+                } else if ordinal_indices.contains(&col_idx) {
+                    ordinal_data.push(col.iter().map(|x| x.to_string()).collect());
+                } else if other_indices.contains(&col_idx) {
+                    other_data.push(col.iter().map(|x| x.parse().unwrap()).collect());
                 }
-
-                // label encoding on ordinal data
-                let mut label_encoded_ordinals: Vec<Vec<T>> = Vec::new();
-                for ordinal in ordinal_data.iter() {
-                    label_encoded_ordinals.push(label_encode(&ordinal));
-                }
-
-                // one-hot encoding on nominal data
-                let mut one_hot_encoded_nominals: Vec<Array2<T>> = Vec::new();
-                let mut one_hot_feature_names: Vec<String> = Vec::new();
-                
-                for (nominal, feature_name) in nominal_data.iter().zip(config.nominals.iter()) {
-                    let (one_hot_encoding, feature_names) = one_hot_encode(nominal, feature_name.to_string());
-                    one_hot_encoded_nominals.push(one_hot_encoding);
-                    one_hot_feature_names.extend(feature_names);
-                }
-
-                // Converting Data to ndarrays:
-                let nominal_records: Array2<T> = concatenate_arrays(one_hot_encoded_nominals);
-                let ordinal_records: Array2<T> = Array2::from_shape_vec((label_encoded_ordinals.len(), headers.len()), label_encoded_ordinals.into_iter().flatten().collect()).unwrap();
-                let other_records: Array2<T> = Array2::from_shape_vec((other_data.len(), headers.len()),other_data.into_iter().flatten().collect(),).unwrap();
-
-                // Combine records based on whether nominal_records is empty
-                let combined_records: Array2<T> = if nominal_records.is_empty() {
-                    concatenate![
-                        Axis(0),
-                        ordinal_records,
-                        other_records
-                    ]
-                } else {
-                    concatenate![
-                        Axis(0),
-                        nominal_records,
-                        ordinal_records,
-                        other_records
-                    ]
-                };
-                // combine feature names
-                let mut combined_feature_names: Vec<String> = Vec::new();
-                combined_feature_names.extend(one_hot_feature_names);
-                combined_feature_names.extend(config.ordinals);
-                combined_feature_names.extend(config.others);
-
-                // convert to DatasetBase with feature names
-                let encoded_dataset:DatasetBase<ArrayBase<OwnedRepr<T>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(combined_records.t().to_owned()).with_feature_names(combined_feature_names);
-                println!("Encoded dataset: {:?}", encoded_dataset);
-
-                self.output.send(encoded_dataset).map_err(|e| UpdateError::Other(e.into()))?;
-                Ok(())
-            } else {
-                Err(UpdateError::Other(anyhow::Error::msg("No config received!")))
             }
 
+            // label encoding on ordinal data
+            let mut label_encoded_ordinals: Vec<Vec<T>> = Vec::new();
+            for ordinal in ordinal_data.iter() {
+                label_encoded_ordinals.push(label_encode(&ordinal));
+            }
+
+            // one-hot encoding on nominal data
+            let mut one_hot_encoded_nominals: Vec<Array2<T>> = Vec::new();
+            let mut one_hot_feature_names: Vec<String> = Vec::new();
+            
+            for (nominal, feature_name) in nominal_data.iter().zip(self.config.nominals.iter()) {
+                let (one_hot_encoding, feature_names) = one_hot_encode(nominal, feature_name.to_string());
+                one_hot_encoded_nominals.push(one_hot_encoding);
+                one_hot_feature_names.extend(feature_names);
+            }
+
+            // Converting Data to ndarrays:
+            let nominal_records: Array2<T> = concatenate_arrays(one_hot_encoded_nominals);
+            let ordinal_records: Array2<T> = Array2::from_shape_vec((label_encoded_ordinals.len(), headers.len()), label_encoded_ordinals.into_iter().flatten().collect()).unwrap();
+            let other_records: Array2<T> = Array2::from_shape_vec((other_data.len(), headers.len()),other_data.into_iter().flatten().collect(),).unwrap();
+
+            // Combine records based on whether nominal_records is empty
+            let combined_records: Array2<T> = if nominal_records.is_empty() {
+                concatenate![
+                    Axis(0),
+                    ordinal_records,
+                    other_records
+                ]
+            } else {
+                concatenate![
+                    Axis(0),
+                    nominal_records,
+                    ordinal_records,
+                    other_records
+                ]
+            };
+            // combine feature names
+            let mut combined_feature_names: Vec<String> = Vec::new();
+            combined_feature_names.extend(one_hot_feature_names);
+            combined_feature_names.extend(self.config.ordinals.clone());
+            combined_feature_names.extend(self.config.others.clone());
+
+            // convert to DatasetBase with feature names
+            let encoded_dataset:DatasetBase<ArrayBase<OwnedRepr<T>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = DatasetBase::from(combined_records.t().to_owned()).with_feature_names(combined_feature_names);
+            debug!("Encoded dataset: {:?}", encoded_dataset);
+
+            self.output.send(encoded_dataset).map_err(|e| UpdateError::Other(e.into()))?;
+            Ok(())
         } else {
-            Err(UpdateError::Other(anyhow::Error::msg("No data received!")))
-        }         
+            Err(UpdateError::Other(anyhow::Error::msg("No config received!")))
+        }
+   
     }
 }
 
@@ -173,9 +181,8 @@ where
     let change_observer = ChangeObserver::new();
 
     let test_data_input = String::from("Age,Food,Rating,Height,Place,Level\n33,Chicken,bad,1.75,Munich,low\n35,Biryani,ok,1.66,London,middle\n74,Kebab,good,1.84,Berlin,high\n62,Chicken,ok,1.63,Munich,middle\n55,Humus,bad,1.94,Berlin,middle\n19,Chicken,good,1.75,Munich,low");
-    let test_config_input = CSVToEncodedDatasetConfig{
+    let test_config_input = EncodingConfig{
         separator: b',',
-        has_feature_names: true,
         nominals: vec!["Food".to_string(), "Place".to_string()],
         ordinals: vec!["Rating".to_string(), "Level".to_string()],
         others: vec!["Age".to_string(), "Height".to_string()]
@@ -203,9 +210,8 @@ where
     let change_observer = ChangeObserver::new();
 
     let test_data_input = String::from("Age,Food,Rating,Height,Place,Level\n33,Chicken,bad,1.75,Munich,low\n35,Biryani,ok,1.66,London,middle\n74,Kebab,good,1.84,Berlin,high\n62,Chicken,ok,1.63,Munich,middle\n55,Humus,bad,1.94,Berlin,middle\n19,Chicken,good,1.75,Munich,low");
-    let test_config_input = CSVToEncodedDatasetConfig{
+    let test_config_input: EncodingConfig = EncodingConfig{
         separator: b',',
-        has_feature_names: true,
         nominals: vec!["Food".to_string(), "Place".to_string()],
         ordinals: vec![],
         others: vec!["Age".to_string(), "Height".to_string()]
@@ -233,9 +239,8 @@ where
     let change_observer = ChangeObserver::new();
 
     let test_data_input = String::from("Age,Food,Rating,Height,Place,Level\n33,Chicken,bad,1.75,Munich,low\n35,Biryani,ok,1.66,London,middle\n74,Kebab,good,1.84,Berlin,high\n62,Chicken,ok,1.63,Munich,middle\n55,Humus,bad,1.94,Berlin,middle\n19,Chicken,good,1.75,Munich,low");
-    let test_config_input = CSVToEncodedDatasetConfig{
+    let test_config_input = EncodingConfig{
         separator: b',',
-        has_feature_names: true,
         nominals: vec![],
         ordinals: vec!["Rating".to_string(), "Level".to_string()],
         others: vec!["Age".to_string(), "Height".to_string()]

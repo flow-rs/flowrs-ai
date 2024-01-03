@@ -6,6 +6,7 @@ use linfa_kernel::{Kernel, KernelType, KernelMethod};
 use linfa_reduction::DiffusionMap;
 use ndarray::{Array2, Array1, array};
 use serde::{Deserialize, Serialize};
+use log::debug;
 
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -64,15 +65,23 @@ where
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
+        debug!("DiffusionMapNode has received an update!");
+
         // receiving config
         if let Ok(config) = self.config_input.next() {
-            println!("[DEBUG::DbscanNode] New Config:\n embedding_size: {},\n steps: {}", config.embedding_size, config.steps);
+
+            debug!("DbscanNode has received config: {}, {}", config.embedding_size, config.steps);
+
             self.config = config;
         }
 
         // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("[DEBUG::DbscanNode] Received Data:\n {}", data.records.clone());
+
+            debug!("DiffusionMapNode has received an update!");
+            
+            let gaussian = T::from(2.0).unwrap();
+
 
             let kernel = Kernel::params()
                 .kind(KernelType::Sparse(3))
@@ -87,8 +96,9 @@ where
             let embedding = mapped_kernel.embedding();
             let red_dataset = DatasetBase::from(embedding.clone());
 
-            println!("[DEBUG::DbscanNode] Sent Data:\n {}", red_dataset.records.clone());
-            self.output.send(red_dataset).map_err(|e| UpdateError::Other(e.into()))?;
+
+            self.output.send(embedding_result).map_err(|e| UpdateError::Other(e.into()))?;
+            debug!("DiffusionMapNode has sent an output!");
         }
 
         Ok(())

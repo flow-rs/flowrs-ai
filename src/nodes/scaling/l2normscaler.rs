@@ -6,6 +6,7 @@ use linfa::traits::Transformer;
 use linfa_preprocessing::norm_scaling::NormScaler;
 use serde::{Deserialize, Serialize};
 use linfa::prelude::*;
+use log::debug;
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
@@ -42,13 +43,15 @@ where
 
         // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("[DEBUG::L2NormScalerNode] Received Data:\n {}", data.records.clone());
+
+            debug!("L2NormScalerNode has received an update!");
 
             let scaler = NormScaler::l1();
-            let scaled_data = scaler.transform(data);
-            
-            println!("[DEBUG::L2NormScalerNode] Sent Data:\n {}", scaled_data.records.clone());
-            self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
+            let normalized_data = scaler.transform(data);
+    
+            self.output.send(normalized_data).map_err(|e| UpdateError::Other(e.into()))?;
+            debug!("L2NormScalerNode has sent an output!");
+
         }
         Ok(())
     }

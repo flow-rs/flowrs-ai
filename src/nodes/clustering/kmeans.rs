@@ -6,6 +6,7 @@ use ndarray::{Array1, Array2, array};
 use linfa::{traits::{Fit, Predict}, Float, DatasetBase};
 use linfa_clustering::KMeans;
 use serde::{Deserialize, Serialize};
+use log::debug;
 
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -66,15 +67,21 @@ where
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
+        debug!("KmeansNode has received an update!");
+
+
         // receiving config
         if let Ok(config) = self.config_input.next() {
-            println!("[DEBUG::KmeansNode] New Config:\n num_of_dim: {},\n max_n_iterations: {},\n tolerance: {}", config.num_of_dim, config.max_n_iterations, config.tolerance);
+
+            debug!("KmeansNode has received config: {}, {}, {}", config.max_n_iterations, config.num_of_dim, config.tolerance);
+
             self.config = config;
         }
 
         // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("[DEBUG::KmeansNode] Received Data:\n {}", data.records.clone());
+
+            debug!("KmeansNode has received data!");
 
             let records = data.records.clone();
 
@@ -88,8 +95,8 @@ where
 
             let clusters = DatasetBase::new(records, result.targets.clone());
 
-            println!("[DEBUG::KmeansNode] Sent Data:\n Records: {},\n Targets: {}", clusters.records.clone(), clusters.targets.clone());
-            self.output.send(clusters).map_err(|e| UpdateError::Other(e.into()))?;
+            self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
+            debug!("KmeansNode has sent an output!")
         }        
         Ok(())
     }

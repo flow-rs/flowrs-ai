@@ -1,1 +1,1 @@
-mod test_connect;
+mod integration_tests;

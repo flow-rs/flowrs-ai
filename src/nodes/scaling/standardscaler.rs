@@ -5,6 +5,7 @@ use linfa::{traits::{Fit, Transformer}, DatasetBase, Float};
 use linfa_preprocessing::linear_scaling::LinearScaler;
 use ndarray::{Array2, Array1, array};
 use serde::{Deserialize, Serialize};
+use log::debug;
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
@@ -41,13 +42,13 @@ where
 
         // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("[DEBUG::StandardScalerNode] Received Data:\n {}", data.records.clone());
+            debug!("StandardScalerNode has received an update!");
 
             let scaler = LinearScaler::standard().fit(&data).unwrap();
             let scaled_data = scaler.transform(data);
 
-            println!("[DEBUG::StandardScalerNode] Sent Data:\n {}", scaled_data.records.clone());
-            self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
+            self.output.send(standard_scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
+            debug!("StandardScalerNode has sent an output!");
         }
         Ok(())
     }

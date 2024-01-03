@@ -6,6 +6,9 @@ use linfa::{traits::Transformer, DatasetBase, Float};
 use linfa_preprocessing::norm_scaling::NormScaler;
 use serde::{Deserialize, Serialize};
 
+use linfa::prelude::*;
+use log::debug;
+
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct L1NormScalerNode<T>
@@ -41,13 +44,15 @@ where
 
         // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("[DEBUG::L1NormScalerNode] Received Data:\n {}", data.records.clone());
+
+            debug!("L1NormScalerNode has received an update!");
 
             let scaler = NormScaler::l1();
-            let scaled_data = scaler.transform(data);
-            
-            println!("[DEBUG::L1NormScalerNode] Sent Data:\n {}", scaled_data.records.clone());
-            self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
+            let normalized_data = scaler.transform(data);
+    
+            self.output.send(normalized_data).map_err(|e| UpdateError::Other(e.into()))?;
+            debug!("L1NormScalerNode has sent an output!");
+
         }
         Ok(())
     }

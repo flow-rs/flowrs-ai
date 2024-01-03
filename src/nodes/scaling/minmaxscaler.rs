@@ -6,7 +6,7 @@ use linfa::{dataset::DatasetBase, Float};
 use linfa::traits::{Fit, Transformer};
 use linfa_preprocessing::linear_scaling::LinearScaler;
 use serde::{Deserialize, Serialize};
-
+use log::debug;
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct MinMaxScalerNode<T> 
@@ -43,13 +43,15 @@ where
 
         // receiving data
         if let Ok(data) = self.data_input.next() {
-            println!("[DEBUG::MinMaxScalerNode] Received Data:\n {}", data.records.clone());
+
+            debug!("MinMaxScalerNode has received an update!");
 
             let scaler = LinearScaler::min_max().fit(&data).unwrap();
             let scaled_data = scaler.transform(data);
 
-            println!("[DEBUG::MinMaxScalerNode] Sent Data:\n {}", scaled_data.records.clone());
-            self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
+            self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
+            debug!("MinMaxScalerNode has sent an output!");
+
         }
         Ok(())
     }
