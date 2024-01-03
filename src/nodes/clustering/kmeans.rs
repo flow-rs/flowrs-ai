@@ -1,30 +1,24 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use linfa::prelude::*;
-use ndarray::{prelude::*};
-use linfa::traits::{Fit, Predict};
+
+use ndarray::{Array1, Array2, array};
+use linfa::{traits::{Fit, Predict}, Float, DatasetBase};
 use linfa_clustering::KMeans;
 use serde::{Deserialize, Serialize};
 use log::debug;
 
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct KmeansConfig <T>
-where
-    T: Clone + Float
-{
+pub struct KmeansConfig {
    pub num_of_dim: usize,
    pub max_n_iterations: u64,
-   pub tolerance: T
+   pub tolerance: f64
 }
 
 
-impl<T> KmeansConfig<T> 
-where
-    T: Clone + Float
-{
-    pub fn new(num_of_dim: usize, max_n_iterations: u64, tolerance: T) -> Self {
+impl KmeansConfig {
+    pub fn new(num_of_dim: usize, max_n_iterations: u64, tolerance: f64) -> Self {
         KmeansConfig {
             num_of_dim,
             max_n_iterations,
@@ -40,7 +34,7 @@ where
     T: Clone + Float
 {
     #[input]
-    pub config_input: Input<KmeansConfig<T>>,
+    pub config_input: Input<KmeansConfig>,
 
     #[output]
     pub output: Output<DatasetBase<Array2<T>, Array1<usize>>>,
@@ -48,7 +42,7 @@ where
     #[input]
     pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>, 
 
-    config: KmeansConfig<T>
+    config: KmeansConfig
 }
 
 
@@ -57,13 +51,11 @@ where
     T: Clone + Float
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
-        let tolerance = T::from(1e-5).unwrap();
-
         Self {
             output: Output::new(change_observer),
             data_input: Input::new(),
             config_input: Input::new(),
-            config: KmeansConfig::new(3, 200, tolerance)
+            config: KmeansConfig::new(3, 200, 1e-5)
         }
     }
 }
@@ -74,33 +66,37 @@ where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
+
         debug!("KmeansNode has received an update!");
 
-        // Neue Config kommt an
+
+        // receiving config
         if let Ok(config) = self.config_input.next() {
+
             debug!("KmeansNode has received config: {}, {}, {}", config.max_n_iterations, config.num_of_dim, config.tolerance);
 
             self.config = config;
         }
 
-        // Daten kommen an
+        // receiving data
         if let Ok(data) = self.data_input.next() {
+
             debug!("KmeansNode has received data!");
 
             let records = data.records.clone();
 
             let model = KMeans::params(self.config.num_of_dim)
                 .max_n_iterations(self.config.max_n_iterations)
-                .tolerance(self.config.tolerance)
+                .tolerance(T::from(self.config.tolerance).unwrap())
                 .fit(&data)
                 .expect("Error while fitting KMeans to the dataset");
 
             let result = model.predict(data);
 
-            let myoutput = DatasetBase::new(records, result.targets.clone());
+            let clusters = DatasetBase::new(records, result.targets.clone());
 
             self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
-            debug!("KmeansNode has sent an output!");
+            debug!("KmeansNode has sent an output!")
         }        
         Ok(())
     }

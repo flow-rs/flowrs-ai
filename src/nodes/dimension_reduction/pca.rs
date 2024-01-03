@@ -2,7 +2,7 @@ use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Outp
 use flowrs::RuntimeConnectable;
 
 use ndarray::{Array2, Array1, array};
-use linfa::{Dataset, DatasetBase};
+use linfa::DatasetBase;
 use linfa_reduction::Pca;
 use linfa::traits::{Fit, Predict};
 use serde::{Deserialize, Serialize};
@@ -60,27 +60,32 @@ where
 
 impl Node for PCANode<f64> {
     fn on_update(&mut self) -> Result<(), UpdateError> {
+
         debug!("PCANode has received an update!");
 
-        // Neue Config kommt an
+
+        // receiving config
         if let Ok(config) = self.config_input.next() {
+
             debug!("PCANode has received config: {}", config.embedding_size);
 
             self.config = config;
         }
 
-        // Daten kommen an
+        // receiving data
         if let Ok(data) = self.data_input.next() {
+
             debug!("PCANode has received data!");
 
             let embedding = Pca::params(self.config.embedding_size)
                 .fit(&data)
                 .unwrap();
-            let red_dataset = embedding.predict(data);
+            let red_dataset_target = embedding.predict(data);
             
-            let myoutput= DatasetBase::from(red_dataset.targets.clone());
+            let red_dataset= DatasetBase::from(red_dataset_target.targets.clone());
 
-            self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
+            println!("[DEBUG::PCANode] Sent Data:\n {}", red_dataset.records.clone());
+            self.output.send(red_dataset).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }
@@ -89,17 +94,22 @@ impl Node for PCANode<f64> {
 
 impl Node for PCANode<f32> {
     fn on_update(&mut self) -> Result<(), UpdateError> {
+
         debug!("PCANode has received an update!");
 
-        // Neue Config kommt an
+
+        // receiving config
         if let Ok(config) = self.config_input.next() {
+
             debug!("PCANode has received config: {}", config.embedding_size);
+
 
             self.config = config;
         }
 
         // Daten kommen an
         if let Ok(data) = self.data_input.next() {
+
             debug!("PCANode has received data!");
 
             let data_f64 = DatasetBase::from(data.records.mapv(|x| x as f64));
@@ -107,11 +117,12 @@ impl Node for PCANode<f32> {
             let embedding = Pca::params(self.config.embedding_size)
                 .fit(&data_f64)
                 .unwrap();
-            let red_dataset = embedding.predict(data_f64);
+            let red_dataset_target = embedding.predict(data_f64);
             
-            let myoutput= DatasetBase::from(red_dataset.targets.mapv(|x| x as f32));
-
-            self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
+            let red_dataset= DatasetBase::from(red_dataset_target.targets.mapv(|x| x as f32));
+            
+            println!("[DEBUG::PCANode] Sent Data:\n {}", red_dataset.records.clone());
+            self.output.send(red_dataset).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
     }
@@ -131,7 +142,7 @@ fn input_output_test() -> Result<(), UpdateError> {
                                          [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
                                          [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
-    let dataset = Dataset::from(test_input.clone());
+    let dataset = DatasetBase::from(test_input.clone());
     let test_config_input = PCAConfig{
         embedding_size: 2,
     };

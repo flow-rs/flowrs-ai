@@ -1,10 +1,9 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use linfa::prelude::*;
-use ndarray::{prelude::*, OwnedRepr};
-use linfa::traits::{Fit, Transformer};
+use linfa::{traits::{Fit, Transformer}, DatasetBase, Float};
 use linfa_preprocessing::linear_scaling::LinearScaler;
+use ndarray::{Array2, Array1, array};
 use serde::{Deserialize, Serialize};
 use log::debug;
 
@@ -41,11 +40,12 @@ where
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
+        // receiving data
         if let Ok(data) = self.data_input.next() {
             debug!("StandardScalerNode has received an update!");
 
             let scaler = LinearScaler::standard().fit(&data).unwrap();
-            let standard_scaled_data = scaler.transform(data);
+            let scaled_data = scaler.transform(data);
 
             self.output.send(standard_scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
             debug!("StandardScalerNode has sent an output!");
@@ -68,7 +68,7 @@ fn input_output_test() -> Result<(), UpdateError> {
                                          [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
                                          [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
-    let dataset = Dataset::from(test_input.clone());
+    let dataset = DatasetBase::from(test_input.clone());
 
     let mut test_node: StandardScalerNode<f64> = StandardScalerNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
@@ -86,8 +86,8 @@ fn input_output_test() -> Result<(), UpdateError> {
     [1.3954484172479409, 1.4206252055541575, 1.406172976453245, -1.4411668351308655, -1.4235378452533811, -1.4458898761864531],
     [-0.7295999338910557, -0.7354670119816634, -0.727984997927734, -0.021298032046269122, -0.004729361612137379, -0.01667418308617004],
     [0.6870989668682753, 0.7019277997088839, 0.6947869849929187, 1.3985707710383273, 1.4140791220291065, 1.412541510014113]];
-    let actual: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<()>, Dim<[usize; 1]>>> = mock_output.next()?;
-    let expected: DatasetBase<ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>, ArrayBase<OwnedRepr<f64>, Dim<[usize; 2]>>> = DatasetBase::new(expected_data.clone(), expected_data.clone());
+    let actual = mock_output.next()?;
+    let expected = DatasetBase::new(expected_data.clone(), expected_data.clone());
 
     Ok(assert!(expected.records == actual.records))
 }

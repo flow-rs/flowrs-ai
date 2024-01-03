@@ -9,20 +9,14 @@ use serde::{Deserialize, Serialize};
 use log::debug;
 
 #[derive(Clone, Deserialize, Serialize)]
-pub struct DbscanConfig<T>
-where
-    T: Clone + Float
-{
+pub struct DbscanConfig {
     pub min_points: usize,
-    pub tolerance: T
+    pub tolerance: f64
 }
 
 
-impl<T> DbscanConfig<T>
-where
-    T: Clone + Float
-{
-pub fn new(min_points: usize, tolerance: T) -> Self {
+impl DbscanConfig {
+    pub fn new(min_points: usize, tolerance: f64) -> Self {
         DbscanConfig {
             min_points: min_points,
             tolerance: tolerance,
@@ -37,7 +31,7 @@ where
     T: Clone + Float
 {
     #[input]
-    pub config_input: Input<DbscanConfig<T>>,
+    pub config_input: Input<DbscanConfig>,
     
     #[output]
     pub output: Output<DatasetBase<Array2<T>, Array1<Option<usize>>>>,
@@ -45,7 +39,7 @@ where
     #[input]
     pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>, 
 
-    config: DbscanConfig<T>
+    config: DbscanConfig
 }
 
 
@@ -54,13 +48,11 @@ where
     T: Clone + Float
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
-        let default_tolerance: T = T::from(0.5).unwrap();
-
         Self {
             config_input: Input::new(),
             data_input: Input::new(),
             output: Output::new(change_observer),
-            config: DbscanConfig::new(2, default_tolerance)
+            config: DbscanConfig::new(2, 0.5)
         }
     }
 }
@@ -73,23 +65,33 @@ where
     fn on_update(&mut self) -> Result<(), UpdateError> {
         debug!("DbscanNode has received an update!");
 
-        // Neue Config kommt an
+
+        // receiving config
         if let Ok(config) = self.config_input.next() {
+
+            println!("[DEBUG::DbscanNode] New Config:\n min_points: {},\n tolerance: {}", config.min_points, config.tolerance);
+
             debug!("DbscanNode has received config: {}, {}", config.min_points, config.tolerance);
 
             self.config = config;
         }
 
-        // Daten kommen an
+        // receiving data
         if let Ok(data) = self.data_input.next() {
+
+            println!("[DEBUG::DbscanNode] Received Data:\n {}", data.records.clone());
+
             debug!("DbscanNode has received data!");
 
+
             let clusters = Dbscan::params(self.config.min_points)
-                .tolerance(self.config.tolerance)
+                .tolerance(T::from(self.config.tolerance).unwrap())
                 .transform(data)
                 .unwrap();
 
+            println!("[DEBUG::DbscanNode] Sent Data:\n Records: {},\n Targets: {:?}", clusters.records.clone(), clusters.targets.clone());
             self.output.send(clusters).map_err(|e| UpdateError::Other(e.into()))?;
+
             debug!("DbscanNode has sent an output!");
         }
 
@@ -112,7 +114,7 @@ fn new_config_test() -> Result<(), UpdateError> {
     [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
     [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
     let input_data = DatasetBase::from(record_input);
-    let test_config_input: DbscanConfig<f64> = DbscanConfig{
+    let test_config_input: DbscanConfig = DbscanConfig{
         min_points: 2,
         tolerance: 0.5
     };

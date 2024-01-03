@@ -1,10 +1,10 @@
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
-use ndarray::prelude::*;
-use linfa::{traits::Transformer, DatasetBase, Dataset, Float};
+use linfa::{traits::Transformer, DatasetBase, Float};
 use linfa_kernel::{Kernel, KernelType, KernelMethod};
 use linfa_reduction::DiffusionMap;
+use ndarray::{Array2, Array1, array};
 use serde::{Deserialize, Serialize};
 use log::debug;
 
@@ -31,14 +31,14 @@ pub struct DiffusionMapNode<T>
 where
     T: Clone
 {
-    #[output]
-    pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
+    #[input]
+    pub config_input: Input<DiffusionMapConfig>,
 
     #[input]
     pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
-    #[input]
-    pub config_input: Input<DiffusionMapConfig>,
+    #[output]
+    pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
     config: DiffusionMapConfig
 }
@@ -64,33 +64,38 @@ where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
+
         debug!("DiffusionMapNode has received an update!");
 
-        // Neue Config kommt an
+        // receiving config
         if let Ok(config) = self.config_input.next() {
+
             debug!("DbscanNode has received config: {}, {}", config.embedding_size, config.steps);
 
             self.config = config;
         }
 
-        // Daten kommen an
+        // receiving data
         if let Ok(data) = self.data_input.next() {
+
             debug!("DiffusionMapNode has received an update!");
             
             let gaussian = T::from(2.0).unwrap();
 
+
             let kernel = Kernel::params()
-            .kind(KernelType::Sparse(3))
-            .method(KernelMethod::Gaussian(gaussian))
-            .transform(data.records.view());
+                .kind(KernelType::Sparse(3))
+                .method(KernelMethod::Gaussian(T::from(2.0).unwrap()))
+                .transform(data.records.view());
 
             let mapped_kernel = DiffusionMap::<T>::params(self.config.embedding_size)
-            .steps(self.config.steps)
-            .transform(&kernel)
-            .unwrap();
+                .steps(self.config.steps)
+                .transform(&kernel)
+                .unwrap();
 
             let embedding = mapped_kernel.embedding();
-            let embedding_result = DatasetBase::from(embedding.clone());
+            let red_dataset = DatasetBase::from(embedding.clone());
+
 
             self.output.send(embedding_result).map_err(|e| UpdateError::Other(e.into()))?;
             debug!("DiffusionMapNode has sent an output!");
@@ -118,7 +123,7 @@ fn new_config_test() -> Result<(), UpdateError> {
                                          [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
                                          [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
-    let test_dataset = Dataset::from(test_input.clone());
+    let test_dataset = DatasetBase::from(test_input.clone());
 
     let mut test_node: DiffusionMapNode<f32> = DiffusionMapNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
@@ -161,7 +166,7 @@ fn default_config_test() -> Result<(), UpdateError> {
                                          [13.0, 14.0, 15.0, 1.0, 2.0, 3.0], 
                                          [4.0, 5.0, 6.0, 7.0, 8.0, 9.0], 
                                          [10.0, 11.0, 12.0, 13.0, 14.0, 15.0]];
-    let test_dataset = Dataset::from(test_input.clone());
+    let test_dataset = DatasetBase::from(test_input.clone());
 
     let mut test_node: DiffusionMapNode<f64> = DiffusionMapNode::new(Some(&change_observer));
     let mock_output = flowrs::connection::Edge::new();
