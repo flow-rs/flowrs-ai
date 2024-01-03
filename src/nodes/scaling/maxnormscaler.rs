@@ -49,7 +49,7 @@ where
             let scaler = NormScaler::max();
             let scaled_data = scaler.transform(data);
     
-            self.output.send(normalized_data).map_err(|e| UpdateError::Other(e.into()))?;
+            self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
             debug!("MaxNormScalerNode has sent an output!");
 
         }

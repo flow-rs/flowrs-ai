@@ -47,7 +47,7 @@ where
             let scaler = LinearScaler::standard().fit(&data).unwrap();
             let scaled_data = scaler.transform(data);
 
-            self.output.send(standard_scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
+            self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
             debug!("StandardScalerNode has sent an output!");
         }
         Ok(())

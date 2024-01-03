@@ -90,7 +90,7 @@ where
 #[test]
 fn input_output_test() -> Result<(), UpdateError> {
     let change_observer = ChangeObserver::new();
-    let test_input = String::from("1,2,3\n4,5,6\n7,8,9");
+    let test_input = String::from("L1,L2,L3\n1,2,3\n4,5,6\n7,8,9");
 
     let mut and: CSVToNdarrayNode<f64> = CSVToNdarrayNode::new(Some(&change_observer));
     let mock_output: flowrs::connection::Edge<ndarray::prelude::ArrayBase<ndarray::OwnedRepr<f64>, ndarray::prelude::Dim<[usize; 2]>>> = flowrs::connection::Edge::new();
@@ -112,7 +112,7 @@ fn test_f32() -> Result<(), UpdateError> {
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 
-    let test_data_input = String::from("1,2,3,4\n3,4,5,6\n5,6,7,8\n7,4,1,9");
+    let test_data_input = String::from("L1,L2,L3,L4\n1,2,3,4\n3,4,5,6\n5,6,7,8\n7,4,1,9");
 
     node.data_input.send(test_data_input.clone())?;
     node.on_update()?;
@@ -134,7 +134,7 @@ fn test_f64() -> Result<(), UpdateError> {
     let mock_output = flowrs::connection::Edge::new();
     flowrs::connection::connect(node.output.clone(), mock_output.clone());
 
-    let test_data_input = String::from("1,2,3,4\n3,4,5,6\n5,6,7,8\n7,4,1,9");
+    let test_data_input = String::from("L1,L2,L3,L4\n1,2,3,4\n3,4,5,6\n5,6,7,8\n7,4,1,9");
 
     node.data_input.send(test_data_input.clone())?;
     node.on_update()?;

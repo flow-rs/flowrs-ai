@@ -97,7 +97,7 @@ where
             let red_dataset = DatasetBase::from(embedding.clone());
 
 
-            self.output.send(embedding_result).map_err(|e| UpdateError::Other(e.into()))?;
+            self.output.send(red_dataset).map_err(|e| UpdateError::Other(e.into()))?;
             debug!("DiffusionMapNode has sent an output!");
         }
 

@@ -95,7 +95,7 @@ where
 
             let clusters = DatasetBase::new(records, result.targets.clone());
 
-            self.output.send(myoutput).map_err(|e| UpdateError::Other(e.into()))?;
+            self.output.send(clusters).map_err(|e| UpdateError::Other(e.into()))?;
             debug!("KmeansNode has sent an output!")
         }        
         Ok(())

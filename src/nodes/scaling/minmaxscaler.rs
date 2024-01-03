@@ -49,7 +49,7 @@ where
             let scaler = LinearScaler::min_max().fit(&data).unwrap();
             let scaled_data = scaler.transform(data);
 
-            self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
+            self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
             debug!("MinMaxScalerNode has sent an output!");
 
         }
