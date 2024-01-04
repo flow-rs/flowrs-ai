@@ -46,7 +46,6 @@ impl<D> Node for ArrayReshapeNode<D>
 where
 D: Dimension {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        print!("Pn UPDATEASGFKJSDLGKJASDLKGJALSKDJGLKASDJGLKASJGLAKSJSFG");
         if let Ok(config) = self.config_input.next() {
             self.config_object = Some(config);
         }
