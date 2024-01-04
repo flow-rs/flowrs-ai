@@ -5,7 +5,6 @@ use flowrs::{
     connection::{Input, Output},
     node::{Node, UpdateError, ChangeObserver},
 };
-use serde::{Deserialize, Serialize};
 
 use image::{imageops::FilterType, DynamicImage};
 
@@ -15,14 +14,15 @@ pub struct ScalingConfig {
    pub height: u32
 }
 
-#[derive(RuntimeConnectable, Deserialize, Serialize)]
+#[derive(RuntimeConnectable)]
 pub struct ImageScalingNode
 {
     #[input]
     pub image: Input<DynamicImage>,
-    pub scaling_config: Input<ScalingConfig>,
+    pub input_scaling_config: Input<ScalingConfig>,
     #[output]
     pub output: Output<DynamicImage>,
+    pub scaling_config: Option<ScalingConfig>,
 }
 
 impl ImageScalingNode
@@ -30,32 +30,41 @@ impl ImageScalingNode
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             image: Input::new(),
-            scaling_config: Input::new(),
+            input_scaling_config: Input::new(),
             output: Output::new(change_observer),
+            scaling_config: None,
         }
     }
 }
-
 
 impl Node for ImageScalingNode {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        let scaling_config = self.scaling_config.next();
-
-        if let Ok(scaling_config) = scaling_config {
-            let output = self.image.next().unwrap().resize_exact(
-                scaling_config.width as u32,
-                scaling_config.height as u32,
-                FilterType::CatmullRom,
-            );
-
-            if output.width() == scaling_config.width && output.height() == scaling_config.height{
-                println!("Resized image dimensions: {} x {}", output.width(), output.height());
+        if self.scaling_config.is_none(){
+            if let Ok(input_scaling_config) = self.input_scaling_config.next(){
+                self.scaling_config = Some(input_scaling_config);
             }else{
-                //Err(err) => println!("Error: {}", err.message);
+                return Err(UpdateError::Other(anyhow::Error::msg(
+                    "Unable to get scaling configuration",)));
             }
         }
-
-        Ok(())
+        if let Ok(image) = self.image.next(){
+            let result = image_scaling(self.scaling_config.clone().unwrap(), image);
+            match self.output.send(result) {
+                Ok(_) => Ok(()),
+                Err(err) => Err(UpdateError::Other(err.into())),
+            }
+        }else{
+            return Err(UpdateError::Other(anyhow::Error::msg(
+                "Unable to get image",)));
+        }
     }
 }
 
+fn image_scaling(scaling_conf: ScalingConfig, image: DynamicImage)-> DynamicImage{
+    let output = image.resize_exact(
+        scaling_conf.width as u32,
+        scaling_conf.height as u32,
+        FilterType::CatmullRom,
+    );
+    output
+}

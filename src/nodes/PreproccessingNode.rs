@@ -5,19 +5,20 @@ use flowrs::{
 };
 use serde::{Deserialize, Serialize};
 use ndarray::{ 
-    Dim,
     OwnedRepr,
     ArrayBase,
-    Array4,
     Array,
-    ArrayD
+    Dim,
+    ArrayD,
+    IxDynImpl,
+    IxDyn
 };
 
 use image::{GenericImageView,DynamicImage};
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct PreProccessingNode
+pub struct PreproccessingNode
 {
     #[input]
     pub input: Input<DynamicImage>,
@@ -25,7 +26,7 @@ pub struct PreProccessingNode
     pub output: Output<ArrayD<f32>>,
 }
 
-impl PreProccessingNode
+impl PreproccessingNode
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
@@ -36,14 +37,19 @@ impl PreProccessingNode
 }
 
 
-impl Node for PreProccessingNode
+impl Node for PreproccessingNode
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
         if let Ok(input) = self.input.next(){
-            let output = preproccessing_input(input);
+            let preprocced_input = preproccessing_input(input);
+            match self.output.send(preprocced_input) {
+                Ok(_) => Ok(()),
+                Err(err) => Err(UpdateError::Other(err.into())),
+            }
+        }else{
+            return Err(UpdateError::Other(anyhow::Error::msg(
+                "Unable to get image to process",)));
         }
-
-        Ok(())
     }
 }
 
@@ -51,17 +57,14 @@ fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>())
 }
 
-fn preproccessing_input(image: DynamicImage) -> Result<ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>, UpdateError>{
-    //let input_path = "C:/Users/Marcel/LRZ Sync+Share/Master/3_Semester/Hauptseminar_2/flow-rs/flowrs-ai/src/example_pic/crosswalk.jpg";
-    //let img = image::open(input_path).expect("Failed to open image"); // img = input
-    //let img = self.input;
-
+fn preproccessing_input(image: DynamicImage) -> ArrayBase<OwnedRepr<f32>, Dim<IxDynImpl>>{
     let resized_image = image;
 
     let (width, height) = resized_image.dimensions();
+    
 
-    let dim = Dim((1,3,width as usize, height as usize));
-    let mut input_tensor: Array4<f32> = Array::zeros(dim);
+    let dim = IxDyn(&[1,3,width as usize, height as usize]);
+    let mut input_tensor: ArrayD<f32> = ArrayD::<f32>::zeros(dim);
      
     for pixel in resized_image.pixels() {
         let x = pixel.0 as usize;
@@ -71,8 +74,6 @@ fn preproccessing_input(image: DynamicImage) -> Result<ArrayBase<OwnedRepr<f32>,
         input_tensor[[0, 1, y, x]] = (g as f32) / 255.0;
         input_tensor[[0, 2, y, x]] = (b as f32) / 255.0;
     };
-    print_type_of(&input_tensor);
-    
-    Ok(input_tensor)
+    input_tensor
 }
 

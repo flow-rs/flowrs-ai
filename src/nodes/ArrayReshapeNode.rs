@@ -1,5 +1,4 @@
 use std::fmt::Debug;
-
 use flowrs::RuntimeConnectable;
 use flowrs::{
     connection::{Input, Output},
