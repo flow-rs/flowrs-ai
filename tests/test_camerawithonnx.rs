@@ -2,8 +2,8 @@
 mod nodes {
     use flowrs::{node::{ChangeObserver, Node}, connection::connect};
     //use flowrs_img::webcam::{WebcamNode, WebcamNodeConfig};
-    use flowrs_ai::ImageScalingNode::{ImageScalingNode, ScalingConfig};
-    use flowrs_ai::PreproccessingNode::PreproccessingNode;
+    use flowrs_ai::image_scaling::{ImageScalingNode, ScalingConfig};
+    use flowrs_ai::pre_processing::PreproccessingNode;
     use flowrs_ai::model::{ModelNode, ModelConfig};
     use std::{env, path::Path, fs::File, io::Read};
     use flowrs::connection::Edge;

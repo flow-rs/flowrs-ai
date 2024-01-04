@@ -2,7 +2,7 @@
 mod nodes {
     use flowrs::connection::{connect, Edge};
     use flowrs::node::{ChangeObserver, Node, ReceiveError};
-    use flowrs_ai::ArrayReshapeNode::{ArrayReshapeNode, ArrayReshapeNodeConfig};
+    use flowrs_ai::array_reshape::{ArrayReshapeNode, ArrayReshapeNodeConfig};
     use ndarray::{ArrayD, IxDyn};
 
     #[test]

@@ -1,5 +1,5 @@
 mod nodes {
-    use flowrs_ai::PreproccessingNode::PreproccessingNode;
+    use flowrs_ai::pre_processing::PreproccessingNode;
     use flowrs::{node::{ChangeObserver, Node}};
     use std::env;
     use image::{imageops::FilterType};

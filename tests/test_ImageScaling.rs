@@ -1,6 +1,6 @@
 mod nodes {
     use flowrs::{node::{ChangeObserver, Node}, connection::connect};
-    use flowrs_ai::ImageScalingNode::{ImageScalingNode, ScalingConfig};
+    use flowrs_ai::image_scaling::{ImageScalingNode, ScalingConfig};
     use std::{env};
     use flowrs::connection::Edge;
 

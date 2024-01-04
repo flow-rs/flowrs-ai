@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 use ndarray::{ 
     OwnedRepr,
     ArrayBase,
-    Array,
     Dim,
     ArrayD,
     IxDynImpl,
@@ -51,10 +50,6 @@ impl Node for PreproccessingNode
                 "Unable to get image to process",)));
         }
     }
-}
-
-fn print_type_of<T>(_: &T) {
-    println!("{}", std::any::type_name::<T>())
 }
 
 fn preproccessing_input(image: DynamicImage) -> ArrayBase<OwnedRepr<f32>, Dim<IxDynImpl>>{
