@@ -10,17 +10,14 @@ use ndarray::{
     Dim,
     ArrayD,
     IxDynImpl,
-    IxDyn
 };
-
-use image::{GenericImageView,DynamicImage};
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct PreproccessingNode
 {
     #[input]
-    pub input: Input<DynamicImage>,
+    pub input: Input<ArrayD<f32>>,
     #[output]
     pub output: Output<ArrayD<f32>>,
 }
@@ -51,24 +48,9 @@ impl Node for PreproccessingNode
         }
     }
 }
-
-fn preproccessing_input(image: DynamicImage) -> ArrayBase<OwnedRepr<f32>, Dim<IxDynImpl>>{
-    let resized_image = image;
-
-    let (width, height) = resized_image.dimensions();
-    
-
-    let dim = IxDyn(&[1,3,width as usize, height as usize]);
-    let mut input_tensor: ArrayD<f32> = ArrayD::<f32>::zeros(dim);
-     
-    for pixel in resized_image.pixels() {
-        let x = pixel.0 as usize;
-        let y = pixel.1 as usize;
-        let [r,g,b,_] = pixel.2.0;
-        input_tensor[[0, 0, y, x]] = (r as f32) / 255.0;
-        input_tensor[[0, 1, y, x]] = (g as f32) / 255.0;
-        input_tensor[[0, 2, y, x]] = (b as f32) / 255.0;
-    };
-    input_tensor
+fn preproccessing_input(mut input: ArrayD<f32>) -> ArrayBase<OwnedRepr<f32>, Dim<IxDynImpl>> {
+    for element in input.iter_mut() {
+        *element = *element / 255.0;
+    }
+    input
 }
-

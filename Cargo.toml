@@ -24,7 +24,7 @@ categories = []
 anyhow = "1.0.72"
 flowrs = {path = "../flowrs"}  # "0.1.0"
 flowrs-std = {path = "../flowrs-std"}
-#flowrs-img = {path = "../flowrs-img"}
+flowrs-img = {path = "../flowrs-img"}
 serde = "1.0.183"
 image = "0.24.7"
 ndarray = "0.15.6"

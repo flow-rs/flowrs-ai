@@ -3,7 +3,7 @@ mod nodes {
     use flowrs::connection::{connect, Edge};
     use flowrs::node::{ChangeObserver, Node, ReceiveError};
     use flowrs_ai::array_reshape::{ArrayReshapeNode, ArrayReshapeNodeConfig};
-    use ndarray::{ArrayD, IxDyn};
+    use ndarray::{ArrayD, IxDyn, Array3};
 
     #[test]
     fn should_return_reshaped_array() -> Result<(), ReceiveError> {
@@ -43,5 +43,12 @@ mod nodes {
             return Err(ReceiveError::Other(err.into()));
         };
         Ok(())
+    }
+
+    #[test]
+    fn reshape() {
+        let arr = Array3::<f32>::zeros([3, 224, 224]);
+        let sh = arr.into_shape(IxDyn(&[1, 3, 224, 224]));
+        print!("{:?}", sh);
     }
 }

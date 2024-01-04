@@ -4,7 +4,7 @@ use flowrs::{
     connection::{Input, Output},
     node::{ChangeObserver, Node, UpdateError},
 };
-use ndarray::{ArrayD, IxDyn, ShapeError};
+use ndarray::{ArrayD, IxDyn, ShapeError, Array, Dimension};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -13,9 +13,9 @@ pub struct ArrayReshapeNodeConfig {
 }
 
 #[derive(RuntimeConnectable, Serialize, Deserialize)]
-pub struct ArrayReshapeNode {
+pub struct ArrayReshapeNode <D> {
     #[input]
-    pub array_input: Input<ArrayD<f32>>,
+    pub array_input: Input<Array<f32, D>>,
 
     #[input]
     pub config_input: Input<ArrayReshapeNodeConfig>,
@@ -26,7 +26,7 @@ pub struct ArrayReshapeNode {
     config_object: Option<ArrayReshapeNodeConfig>,
 }
 
-impl ArrayReshapeNode {
+impl<D> ArrayReshapeNode <D> {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             array_input: Input::new(),
@@ -37,12 +37,16 @@ impl ArrayReshapeNode {
     }
     pub fn reshape(&self, input: ArrayD<f32>) -> Result<ArrayD<f32>, ShapeError> {
         let output = input.into_shape(self.config_object.clone().unwrap().dimension);
+        print!("{:?}", output);
         return output;
     }
 }
 
-impl Node for ArrayReshapeNode {
+impl<D> Node for ArrayReshapeNode<D>  
+where
+D: Dimension {
     fn on_update(&mut self) -> Result<(), UpdateError> {
+        print!("Pn UPDATEASGFKJSDLGKJASDLKGJALSKDJGLKASDJGLKASJGLAKSJSFG");
         if let Ok(config) = self.config_input.next() {
             self.config_object = Some(config);
         }
@@ -54,10 +58,15 @@ impl Node for ArrayReshapeNode {
         }
 
         if let Ok(array) = self.array_input.next() {
-            match array.into_shape(IxDyn(&self.config_object.clone().unwrap().dimension)) {
-                Ok(reshaped_array) => match self.array_output.clone().send(reshaped_array) {
+            let it = array.iter().cloned();
+            let new_array = Array::from_iter(it);
+            let shape = IxDyn(&self.config_object.clone().unwrap().dimension);
+            match new_array.into_shape(shape) {
+                Ok(reshaped_array) => {
+                    match self.array_output.clone().send(reshaped_array) {
                     Ok(_) => Ok(()),
                     Err(err) => Err(UpdateError::Other(err.into())),
+                }
                 },
                 Err(err) => Err(UpdateError::Other(err.into())),
             }
