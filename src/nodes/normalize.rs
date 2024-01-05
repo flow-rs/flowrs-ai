@@ -14,7 +14,7 @@ use ndarray::{
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
-pub struct PreproccessingNode
+pub struct NormalizeNode
 {
     #[input]
     pub input: Input<ArrayD<f32>>,
@@ -22,7 +22,7 @@ pub struct PreproccessingNode
     pub output: Output<ArrayD<f32>>,
 }
 
-impl PreproccessingNode
+impl NormalizeNode
 {
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
@@ -33,11 +33,11 @@ impl PreproccessingNode
 }
 
 
-impl Node for PreproccessingNode
+impl Node for NormalizeNode
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
         if let Ok(input) = self.input.next(){
-            let preprocced_input = preproccessing_input(input);
+            let preprocced_input = normalize_input(input);
             match self.output.send(preprocced_input) {
                 Ok(_) => Ok(()),
                 Err(err) => Err(UpdateError::Other(err.into())),
@@ -48,7 +48,7 @@ impl Node for PreproccessingNode
         }
     }
 }
-fn preproccessing_input(mut input: ArrayD<f32>) -> ArrayBase<OwnedRepr<f32>, Dim<IxDynImpl>> {
+fn normalize_input(mut input: ArrayD<f32>) -> ArrayBase<OwnedRepr<f32>, Dim<IxDynImpl>> {
     for element in input.iter_mut() {
         *element = *element / 255.0;
     }

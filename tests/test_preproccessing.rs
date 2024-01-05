@@ -1,5 +1,5 @@
 mod nodes {
-    use flowrs_ai::pre_processing::PreproccessingNode;
+    use flowrs_ai::normalize::NormalizeNode;
     use flowrs::{node::{ChangeObserver, Node}};
     use ndarray::{Array};
     use std::{cmp::Ordering};
@@ -18,7 +18,7 @@ mod nodes {
         });
 
         let mock_output = Edge::new();
-        let mut preproccessing_node = PreproccessingNode::new(Some(&change_observer));
+        let mut preproccessing_node = NormalizeNode::new(Some(&change_observer));
         connect(preproccessing_node.output.clone(), mock_output.clone());
 
         let _ = preproccessing_node.input.send(array_4d.into_dyn());

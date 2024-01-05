@@ -3,7 +3,7 @@ mod nodes {
     use flowrs::{node::{ChangeObserver, Node}, connection::connect};
     //use flowrs_img::webcam::{WebcamNode};
     use flowrs_ai::{image_scaling::{ImageScalingNode, ScalingConfig}, array_reshape::{ArrayReshapeNode, ArrayReshapeNodeConfig}};
-    use flowrs_ai::pre_processing::PreproccessingNode;
+    use flowrs_ai::normalize::NormalizeNode;
     use flowrs_ai::model::{ModelNode, ModelConfig};
     use std::{env, path::Path, fs::File, io::Read};
     use flowrs::connection::Edge;
@@ -43,7 +43,7 @@ mod nodes {
         let mut image_scaling_node = ImageScalingNode::new(Some(&change_observer));
         let mut image_to_array3 = ImageToArray3Node::<f32>::new(Some(&change_observer));
         let mut array_reshape = ArrayReshapeNode::new(Some(&change_observer));
-        let mut preproccessing_node = PreproccessingNode::new(Some(&change_observer));
+        let mut preproccessing_node = NormalizeNode::new(Some(&change_observer));
         let mut model_node = ModelNode::new(Some(&change_observer));
         let mut post_processing = MaxOutputNode::new(Some(&change_observer));
         // get classes from model
