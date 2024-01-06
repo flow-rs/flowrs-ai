@@ -37,7 +37,7 @@ impl<D> ArrayReshapeNode <D> {
     }
     pub fn reshape(&self, input: ArrayD<f32>) -> Result<ArrayD<f32>, ShapeError> {
         let output = input.into_shape(self.config_object.clone().unwrap().dimension);
-        print!("{:?}", output);
+        print!("reshape {:?}", output);
         return output;
     }
 }
@@ -46,6 +46,7 @@ impl<D> Node for ArrayReshapeNode<D>
 where
 D: Dimension {
     fn on_update(&mut self) -> Result<(), UpdateError> {
+        print!("reshape");
         if let Ok(config) = self.config_input.next() {
             self.config_object = Some(config);
         }

@@ -7,8 +7,10 @@ use flowrs::{
 };
 
 use image::{imageops::FilterType, DynamicImage};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug)]
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ScalingConfig {
    pub width: u32,
    pub height: u32
