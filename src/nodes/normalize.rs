@@ -39,13 +39,11 @@ impl Node for NormalizeNode
         if let Ok(input) = self.input.next(){
             let preprocced_input = normalize_input(input);
             match self.output.send(preprocced_input) {
-                Ok(_) => Ok(()),
-                Err(err) => Err(UpdateError::Other(err.into())),
+                Ok(_) => return Ok(()),
+                Err(err) => return Err(UpdateError::Other(err.into())),
             }
-        }else{
-            return Err(UpdateError::Other(anyhow::Error::msg(
-                "Unable to get image to process",)));
         }
+        Ok(())
     }
 }
 fn normalize_input(mut input: ArrayD<f32>) -> ArrayBase<OwnedRepr<f32>, Dim<IxDynImpl>> {

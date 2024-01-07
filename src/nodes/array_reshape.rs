@@ -46,7 +46,6 @@ impl<D> Node for ArrayReshapeNode<D>
 where
 D: Dimension {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        print!("reshape");
         if let Ok(config) = self.config_input.next() {
             self.config_object = Some(config);
         }
@@ -64,16 +63,13 @@ D: Dimension {
             match new_array.into_shape(shape) {
                 Ok(reshaped_array) => {
                     match self.array_output.clone().send(reshaped_array) {
-                    Ok(_) => Ok(()),
-                    Err(err) => Err(UpdateError::Other(err.into())),
+                    Ok(_) => return Ok(()),
+                    Err(err) => return Err(UpdateError::Other(err.into())),
                 }
                 },
-                Err(err) => Err(UpdateError::Other(err.into())),
+                Err(err) => return Err(UpdateError::Other(err.into())),
             }
-        } else {
-            Err(UpdateError::Other(anyhow::Error::msg(
-                "No array given to input.",
-            )))
-        }
+        } 
+        Ok(())
     }
 }

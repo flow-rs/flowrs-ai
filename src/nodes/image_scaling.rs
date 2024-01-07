@@ -52,13 +52,11 @@ impl Node for ImageScalingNode {
         if let Ok(image) = self.image.next(){
             let result = image_scaling(self.scaling_config.clone().unwrap(), image);
             match self.output.send(result) {
-                Ok(_) => Ok(()),
-                Err(err) => Err(UpdateError::Other(err.into())),
+                Ok(_) => return Ok(()),
+                Err(err) => return Err(UpdateError::Other(err.into())),
             }
-        }else{
-            return Err(UpdateError::Other(anyhow::Error::msg(
-                "Unable to get image",)));
         }
+        Ok(())
     }
 }
 
