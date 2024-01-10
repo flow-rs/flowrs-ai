@@ -66,15 +66,12 @@ impl Node for PCANode<f64> {
 
         // receiving config
         if let Ok(config) = self.config_input.next() {
-
             debug!("PCANode has received config: {}", config.embedding_size);
-
             self.config = config;
         }
 
         // receiving data
         if let Ok(data) = self.data_input.next() {
-
             debug!("PCANode has received data!");
 
             let embedding = Pca::params(self.config.embedding_size)
@@ -84,7 +81,6 @@ impl Node for PCANode<f64> {
             
             let red_dataset= DatasetBase::from(red_dataset_target.targets.clone());
 
-            println!("[DEBUG::PCANode] Sent Data:\n {}", red_dataset.records.clone());
             self.output.send(red_dataset).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
@@ -100,16 +96,12 @@ impl Node for PCANode<f32> {
 
         // receiving config
         if let Ok(config) = self.config_input.next() {
-
             debug!("PCANode has received config: {}", config.embedding_size);
-
-
             self.config = config;
         }
 
         // Daten kommen an
         if let Ok(data) = self.data_input.next() {
-
             debug!("PCANode has received data!");
 
             let data_f64 = DatasetBase::from(data.records.mapv(|x| x as f64));
@@ -121,7 +113,6 @@ impl Node for PCANode<f32> {
             
             let red_dataset= DatasetBase::from(red_dataset_target.targets.mapv(|x| x as f32));
             
-            println!("[DEBUG::PCANode] Sent Data:\n {}", red_dataset.records.clone());
             self.output.send(red_dataset).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())

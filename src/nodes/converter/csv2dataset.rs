@@ -66,8 +66,6 @@ where
     T: Clone + Send + DeserializeOwned + std::fmt::Display // for debugging
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-
-
         debug!("CSVToDatasetNode has received an update!");
      
         if let Ok(config) = self.config_input.next() {
@@ -96,11 +94,9 @@ where
                 };
                 let dataset_with_features = dataset.with_feature_names(feature_names);
 
-                println!("[DEBUG::CSVToDatasetNode] Sent Data:\n {}", dataset_with_features.records.clone());
                 self.output.send(dataset_with_features).map_err(|e| UpdateError::Other(e.into()))?;
                 return Ok(());
             }
-            println!("[DEBUG::CSVToDatasetNode] Sent Data:\n {}", dataset.records.clone());
             self.output.send(dataset).map_err(|e| UpdateError::Other(e.into()))?;
         }
         Ok(())
