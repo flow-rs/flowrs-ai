@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
@@ -19,6 +21,9 @@ where
 
     #[input]
     pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
+
+    cum_time: Duration,
+    counter: usize
 }
 
 
@@ -29,7 +34,9 @@ where
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
-            data_input: Input::new()
+            data_input: Input::new(),
+            cum_time: Duration::new(0, 0),
+            counter: 0
         }
     }
 }
@@ -43,16 +50,23 @@ where
 
         // receiving data
         if let Ok(data) = self.data_input.next() {
-
-            debug!("MaxNormScalerNode has received data!");
+            let start_time = Instant::now();
 
             let scaler = NormScaler::max();
             let scaled_data = scaler.transform(data);
     
             self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
-            debug!("MaxNormScalerNode has sent an output!");
 
+            let end_time = Instant::now();
+            self.cum_time = self.cum_time.saturating_add(end_time - start_time);
+            self.counter = self.counter + 1;
+            if self.counter == 10 {
+                println!("[MaxNormScalerNode] Cum_Time: {:?}", self.cum_time);
+                #[cfg(target_arch = "wasm32")]
+                crate::log(format!("[MaxNormScalerNode] Cum_Time: {:?}", self.cum_time).as_str());
+            }
         }
+        
         Ok(())
     }
 }

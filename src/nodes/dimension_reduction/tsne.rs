@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
@@ -41,7 +43,10 @@ where
     #[input]
     pub config_input: Input<TsneConfig>,
     
-    config: TsneConfig
+    config: TsneConfig,
+
+    cum_time: Duration,
+    counter: usize
 }
 
 
@@ -54,7 +59,9 @@ where
             output: Output::new(change_observer),
             data_input: Input::new(),
             config_input: Input::new(),
-            config: TsneConfig::new(2, 1., 0.1)
+            config: TsneConfig::new(2, 1., 0.1),
+            cum_time: Duration::new(0, 0),
+            counter: 0
         }
     }
 }
@@ -66,29 +73,32 @@ where
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
-        debug!("TsneNode has received an update!");
-
         // received config
         if let Ok(config) = self.config_input.next() {
-            debug!("TsneNode has received config: {}, {}, {}", config.embedding_size, config.perplexity, config.approx_threshold);
-
             self.config = config;
         }
 
         // received data
         if let Ok(data) = self.data_input.next() {
-
-            debug!("TsneNode has received data!");
+            let start_time = Instant::now();
 
             let red_dataset = TSneParams::embedding_size(self.config.embedding_size)
                 .perplexity(T::from(self.config.perplexity).unwrap())
                 .approx_threshold(T::from(self.config.approx_threshold).unwrap())
                 .transform(data.clone())
                 .unwrap();
-
-            println!("[DEBUG::TsneNode] Sent Data:\n {}", red_dataset.records.clone());
             self.output.send(red_dataset).map_err(|e| UpdateError::Other(e.into()))?;
+
+            let end_time = Instant::now();
+            self.cum_time = self.cum_time.saturating_add(end_time - start_time);
+            self.counter = self.counter + 1;
+            if self.counter == 10 {
+                println!("[TsneNode] Cum_Time: {:?}", self.cum_time);
+                #[cfg(target_arch = "wasm32")]
+                crate::log(format!("[TsneNode] Cum_Time: {:?}", self.cum_time).as_str());
+            }
         }
+        
         Ok(())
     }
 }

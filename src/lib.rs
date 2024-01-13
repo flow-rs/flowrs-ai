@@ -19,3 +19,5 @@ pub use self::nodes::dimension_reduction::diffusionmap;
 
 pub use self::nodes::clustering::dbscan;
 pub use self::nodes::clustering::kmeans;
+
+pub use self::nodes::test_node;

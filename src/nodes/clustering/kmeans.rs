@@ -1,6 +1,7 @@
+use std::time::{Duration, Instant};
+
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
-
 
 use ndarray::{Array1, Array2, array};
 use linfa::{traits::{Fit, Predict}, Float, DatasetBase};
@@ -42,7 +43,10 @@ where
     #[input]
     pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>, 
 
-    config: KmeansConfig
+    config: KmeansConfig,
+
+    cum_time: Duration,
+    counter: usize
 }
 
 
@@ -55,7 +59,9 @@ where
             output: Output::new(change_observer),
             data_input: Input::new(),
             config_input: Input::new(),
-            config: KmeansConfig::new(3, 200, 1e-5)
+            config: KmeansConfig::new(3, 200, 1e-5),
+            cum_time: Duration::new(0, 0),
+            counter: 0
         }
     }
 }
@@ -66,22 +72,14 @@ where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-
-        debug!("KmeansNode has received an update!");
-
-
         // receiving config
         if let Ok(config) = self.config_input.next() {
-
-            debug!("KmeansNode has received config: {}, {}, {}", config.max_n_iterations, config.num_of_dim, config.tolerance);
-
             self.config = config;
         }
 
         // receiving data
         if let Ok(data) = self.data_input.next() {
-
-            debug!("KmeansNode has received data!");
+            let start_time = Instant::now();
 
             let records = data.records.clone();
 
@@ -90,13 +88,19 @@ where
                 .tolerance(T::from(self.config.tolerance).unwrap())
                 .fit(&data)
                 .expect("Error while fitting KMeans to the dataset");
-
             let result = model.predict(data);
-
             let clusters = DatasetBase::new(records, result.targets.clone());
 
             self.output.send(clusters).map_err(|e| UpdateError::Other(e.into()))?;
-            debug!("KmeansNode has sent an output!")
+
+            let end_time = Instant::now();
+            self.cum_time = self.cum_time.saturating_add(end_time - start_time);
+            self.counter = self.counter + 1;
+            if self.counter == 10 {
+                println!("[KmeansNode] Cum_Time: {:?}", self.cum_time);
+                #[cfg(target_arch = "wasm32")]
+                crate::log(format!("[KmeansNode] Cum_Time: {:?}", self.cum_time).as_str());
+            }
         }        
         Ok(())
     }

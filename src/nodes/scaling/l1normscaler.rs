@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
@@ -5,9 +7,6 @@ use ndarray::{Array2, array, Array1};
 use linfa::{traits::Transformer, DatasetBase, Float};
 use linfa_preprocessing::norm_scaling::NormScaler;
 use serde::{Deserialize, Serialize};
-
-use linfa::prelude::*;
-use log::debug;
 
 
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
@@ -20,6 +19,9 @@ where
 
     #[input]
     pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
+
+    cum_time: Duration,
+    counter: usize
 }
 
 
@@ -30,7 +32,9 @@ where
     pub fn new(change_observer: Option<&ChangeObserver>) -> Self {
         Self {
             output: Output::new(change_observer),
-            data_input: Input::new()
+            data_input: Input::new(),
+            cum_time: Duration::new(0, 0),
+            counter: 0
         }
     }
 }
@@ -44,16 +48,23 @@ where
 
         // receiving data
         if let Ok(data) = self.data_input.next() {
-
-            debug!("L1NormScalerNode has received an update!");
+            let start_time = Instant::now();
 
             let scaler = NormScaler::l1();
             let normalized_data = scaler.transform(data);
     
             self.output.send(normalized_data).map_err(|e| UpdateError::Other(e.into()))?;
-            debug!("L1NormScalerNode has sent an output!");
 
+            let end_time = Instant::now();
+            self.cum_time = self.cum_time.saturating_add(end_time - start_time);
+            self.counter = self.counter + 1;
+            if self.counter == 10 {
+                println!("[L1NormScalerNode] Cum_Time: {:?}", self.cum_time);
+                #[cfg(target_arch = "wasm32")]
+                crate::log(format!("[L1NormScalerNode] Cum_Time: {:?}", self.cum_time).as_str());
+            }
         }
+
         Ok(())
     }
 }

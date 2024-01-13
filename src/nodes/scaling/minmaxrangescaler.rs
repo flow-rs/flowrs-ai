@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
@@ -39,7 +41,10 @@ where
     #[input]
     pub config_input: Input<MinMaxRangeScalerConfig>,
 
-    config: MinMaxRangeScalerConfig
+    config: MinMaxRangeScalerConfig,
+
+    cum_time: Duration,
+    counter: usize
 }
 
 
@@ -52,8 +57,9 @@ where
             output: Output::new(change_observer),
             data_input: Input::new(),
             config_input: Input::new(),
-            config: MinMaxRangeScalerConfig::new(0., 1.)
-
+            config: MinMaxRangeScalerConfig::new(0., 1.),
+            cum_time: Duration::new(0, 0),
+            counter: 0
         }
     }
 }
@@ -65,26 +71,30 @@ where
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
-        debug!("MinMaxRangeScaleNode has received an update!");
-
         // receiving config
         if let Ok(config) = self.config_input.next() {
-
-            debug!("MinMaxRangeScaleNode has received config: {}, {}", config.min, config.max);
-
             self.config = config;
         }
 
         // receiving data
         if let Ok(data) = self.data_input.next() {
-
-            debug!("DbscanNode has received data!");
+            let start_time = Instant::now();
 
             let scaler = LinearScaler::min_max_range(T::from(self.config.min).unwrap(), T::from(self.config.max).unwrap()).fit(&data).unwrap();
             let scaled_data = scaler.transform(data);
 
             self.output.send(scaled_data).map_err(|e| UpdateError::Other(e.into()))?;
+
+            let end_time = Instant::now();
+            self.cum_time = self.cum_time.saturating_add(end_time - start_time);
+            self.counter = self.counter + 1;
+            if self.counter == 10 {
+                println!("[MinMaxRangeScalerNode] Cum_Time: {:?}", self.cum_time);
+                #[cfg(target_arch = "wasm32")]
+                crate::log(format!("[MinMaxRangeScalerNode] Cum_Time: {:?}", self.cum_time).as_str());
+            }
         }
+
         Ok(())
     }
 }

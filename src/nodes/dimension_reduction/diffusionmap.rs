@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
@@ -40,7 +42,10 @@ where
     #[output]
     pub output: Output<DatasetBase<Array2<T>, Array1<()>>>,
 
-    config: DiffusionMapConfig
+    config: DiffusionMapConfig,
+
+    cum_time: Duration,
+    counter: usize
 }
 
 
@@ -53,7 +58,9 @@ where
             data_input: Input::new(),
             config_input: Input::new(),
             output: Output::new(change_observer),
-            config: DiffusionMapConfig::new(2, 1)
+            config: DiffusionMapConfig::new(2, 1),
+            cum_time: Duration::new(0, 0),
+            counter: 0
         }
     }
 }
@@ -64,24 +71,14 @@ where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-
-        debug!("DiffusionMapNode has received an update!");
-
         // receiving config
         if let Ok(config) = self.config_input.next() {
-
-            debug!("DbscanNode has received config: {}, {}", config.embedding_size, config.steps);
-
             self.config = config;
         }
 
         // receiving data
-        if let Ok(data) = self.data_input.next() {
-
-            debug!("DiffusionMapNode has received an update!");
-            
-            let gaussian = T::from(2.0).unwrap();
-
+        if let Ok(data) = self.data_input.next() {   
+            let start_time = Instant::now();
 
             let kernel = Kernel::params()
                 .kind(KernelType::Sparse(3))
@@ -96,10 +93,17 @@ where
             let embedding = mapped_kernel.embedding();
             let red_dataset = DatasetBase::from(embedding.clone());
 
-
             self.output.send(red_dataset).map_err(|e| UpdateError::Other(e.into()))?;
-            debug!("DiffusionMapNode has sent an output!");
-        }
+
+            let end_time = Instant::now();
+            self.cum_time = self.cum_time.saturating_add(end_time - start_time);
+            self.counter = self.counter + 1;
+            if self.counter == 10 {
+                println!("[DiffusionMapNode] Cum_Time: {:?}", self.cum_time);
+                #[cfg(target_arch = "wasm32")]
+                crate::log(format!("[DiffusionMapNode] Cum_Time: {:?}", self.cum_time).as_str());
+            }
+       }
 
         Ok(())
     }

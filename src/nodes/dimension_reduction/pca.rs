@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
@@ -38,7 +40,10 @@ where
     #[input]
     pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>,
 
-    config: PCAConfig
+    config: PCAConfig,
+
+    cum_time: Duration,
+    counter: usize
 }
 
 
@@ -51,8 +56,9 @@ where
             config_input: Input::new(),
             data_input: Input::new(),
             output: Output::new(change_observer),
-            config: PCAConfig::new(2)
-
+            config: PCAConfig::new(2),
+            cum_time: Duration::new(0, 0),
+            counter: 0
         }
     }
 }
@@ -61,18 +67,14 @@ where
 impl Node for PCANode<f64> {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
-        debug!("PCANode has received an update!");
-
-
         // receiving config
         if let Ok(config) = self.config_input.next() {
-            debug!("PCANode has received config: {}", config.embedding_size);
             self.config = config;
         }
 
         // receiving data
         if let Ok(data) = self.data_input.next() {
-            debug!("PCANode has received data!");
+            let start_time = Instant::now();
 
             let embedding = Pca::params(self.config.embedding_size)
                 .fit(&data)
@@ -82,6 +84,15 @@ impl Node for PCANode<f64> {
             let red_dataset= DatasetBase::from(red_dataset_target.targets.clone());
 
             self.output.send(red_dataset).map_err(|e| UpdateError::Other(e.into()))?;
+
+            let end_time = Instant::now();
+            self.cum_time = self.cum_time.saturating_add(end_time - start_time);
+            self.counter = self.counter + 1;
+            if self.counter == 10 {
+                println!("[PCANode] Cum_Time: {:?}", self.cum_time);
+                #[cfg(target_arch = "wasm32")]
+                crate::log(format!("[PCANode] Cum_Time: {:?}", self.cum_time).as_str());
+            }
         }
         Ok(())
     }
@@ -91,18 +102,14 @@ impl Node for PCANode<f64> {
 impl Node for PCANode<f32> {
     fn on_update(&mut self) -> Result<(), UpdateError> {
 
-        debug!("PCANode has received an update!");
-
-
         // receiving config
         if let Ok(config) = self.config_input.next() {
-            debug!("PCANode has received config: {}", config.embedding_size);
             self.config = config;
         }
 
         // Daten kommen an
         if let Ok(data) = self.data_input.next() {
-            debug!("PCANode has received data!");
+            let start_time = Instant::now();
 
             let data_f64 = DatasetBase::from(data.records.mapv(|x| x as f64));
 
@@ -114,7 +121,17 @@ impl Node for PCANode<f32> {
             let red_dataset= DatasetBase::from(red_dataset_target.targets.mapv(|x| x as f32));
             
             self.output.send(red_dataset).map_err(|e| UpdateError::Other(e.into()))?;
+
+            let end_time = Instant::now();
+            self.cum_time = self.cum_time.saturating_add(end_time - start_time);
+            self.counter = self.counter + 1;
+            if self.counter == 100 {
+                println!("[PCANode] Cum_Time: {:?}", self.cum_time);
+                #[cfg(target_arch = "wasm32")]
+                crate::log(format!("[PCANode] Cum_Time: {:?}", self.cum_time).as_str());
+            }
         }
+        
         Ok(())
     }
 }

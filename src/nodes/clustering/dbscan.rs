@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
 
@@ -6,7 +8,7 @@ use linfa::{dataset::DatasetBase, Float};
 use linfa::traits::Transformer;
 use linfa_clustering::Dbscan;
 use serde::{Deserialize, Serialize};
-use log::debug;
+
 
 #[derive(Clone, Deserialize, Serialize)]
 pub struct DbscanConfig {
@@ -39,7 +41,10 @@ where
     #[input]
     pub data_input: Input<DatasetBase<Array2<T>, Array1<()>>>, 
 
-    config: DbscanConfig
+    config: DbscanConfig,
+
+    cum_time: Duration,
+    counter: usize
 }
 
 
@@ -52,7 +57,9 @@ where
             config_input: Input::new(),
             data_input: Input::new(),
             output: Output::new(change_observer),
-            config: DbscanConfig::new(2, 0.5)
+            config: DbscanConfig::new(2, 0.5),
+            cum_time: Duration::new(0, 0),
+            counter: 0
         }
     }
 }
@@ -63,38 +70,32 @@ where
     T: Clone + Send + Float
 {
     fn on_update(&mut self) -> Result<(), UpdateError> {
-        debug!("DbscanNode has received an update!");
-
 
         // receiving config
         if let Ok(config) = self.config_input.next() {
-
-            println!("[DEBUG::DbscanNode] New Config:\n min_points: {},\n tolerance: {}", config.min_points, config.tolerance);
-
-            debug!("DbscanNode has received config: {}, {}", config.min_points, config.tolerance);
-
             self.config = config;
         }
 
         // receiving data
         if let Ok(data) = self.data_input.next() {
-
-            println!("[DEBUG::DbscanNode] Received Data:\n {}", data.records.clone());
-
-            debug!("DbscanNode has received data!");
-
+            let start_time = Instant::now();
 
             let clusters = Dbscan::params(self.config.min_points)
                 .tolerance(T::from(self.config.tolerance).unwrap())
                 .transform(data)
                 .unwrap();
-
-            println!("[DEBUG::DbscanNode] Sent Data:\n Records: {},\n Targets: {:?}", clusters.records.clone(), clusters.targets.clone());
             self.output.send(clusters).map_err(|e| UpdateError::Other(e.into()))?;
 
-            debug!("DbscanNode has sent an output!");
+            let end_time = Instant::now();
+            self.cum_time = self.cum_time.saturating_add(end_time - start_time);
+            self.counter = self.counter + 1;
+            if self.counter == 10 {
+                println!("[DbscanNode] Cum_Time: {:?}", self.cum_time);
+                #[cfg(target_arch = "wasm32")]
+                crate::log(format!("[DbscanNode] Cum_Time: {:?}", self.cum_time).as_str());
+            }
         }
-
+        
         Ok(())
     }
 }
