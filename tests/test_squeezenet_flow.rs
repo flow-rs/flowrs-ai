@@ -10,7 +10,7 @@ mod nodes {
     use flowrs_img::transform::ImageToArray3Node;
 
     #[test]
-    fn test_webcamwithonnx() -> Result<(), anyhow::Error> {
+    fn test_squeezenet_flow() -> Result<(), anyhow::Error> {
         let change_observer: ChangeObserver = ChangeObserver::new();
 
         // creating config
