@@ -3,9 +3,7 @@ mod nodes {
     use flowrs_ai::model::{ModelNode, ModelConfig};
     use flowrs::{node::{ChangeObserver, Node}, connection::{connect, Edge}};
 
-    use ndarray::{ArrayD, s, IxDyn};
-    use std::{env};
-    use image::{imageops::FilterType, ImageBuffer, Pixel, Rgb};
+    use ndarray::{ArrayD, IxDyn};
 
     #[test]
     fn should_run_model() -> Result<(), anyhow::Error> {
