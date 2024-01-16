@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod nodes {
     use flowrs::{node::{ChangeObserver, Node}, connection::connect};
-    //use flowrs_img::webcam::{WebcamNode};
     use flowrs_ai::{image_scaling::{ImageScalingNode, ScalingConfig}, array_reshape::{ArrayReshapeNode, ArrayReshapeNodeConfig}};
     use flowrs_ai::normalize::NormalizeNode;
     use flowrs_ai::model::{ModelNode, ModelConfig};
@@ -13,11 +12,8 @@ mod nodes {
     #[test]
     fn test_webcamwithonnx() -> Result<(), anyhow::Error> {
         let change_observer: ChangeObserver = ChangeObserver::new();
-        // initialize camera
-        //let webcam_config = WebcamNodeConfig { device_index: 0 };
-        //let mut webcam = WebcamNode::<i32>::new(webcam_config, Some(&change_observer));        
-        
-        // creating scaling config
+
+        // creating config
         let scaling_config = ScalingConfig{
             width: 224,
             height: 224,
@@ -38,8 +34,6 @@ mod nodes {
         let _ = file.read_to_end(&mut labels_file).unwrap();
         
         // creating flow and test functionality
-        //let image_value = ValueNode::new(img, Some(&change_observer));
-        // let scaling_config_value = ValueNode::new(scaling_config, Some(&change_observer));
         let mut image_scaling_node = ImageScalingNode::new(Some(&change_observer));
         let mut image_to_array3 = ImageToArray3Node::<f32>::new(Some(&change_observer));
         let mut array_reshape = ArrayReshapeNode::new(Some(&change_observer));
@@ -47,7 +41,6 @@ mod nodes {
         let mut model_node = ModelNode::new(Some(&change_observer));
         let mut post_processing = MaxOutputNode::new(Some(&change_observer));
         // get classes from model
-        //let mut debug = DebugNode::new(Some(&change_observer));
         let mock_output = Edge::new();
         connect(image_scaling_node.output.clone(), image_to_array3.input.clone());
         connect(image_to_array3.output.clone(), array_reshape.array_input.clone());

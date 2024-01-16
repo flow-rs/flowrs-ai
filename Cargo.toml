@@ -19,11 +19,9 @@ categories = []
 
 #[[bin]]
 
-
 [dependencies]
 anyhow = "1.0.72"
 flowrs = {path = "../flowrs"}  # "0.1.0"
-flowrs-std = {path = "../flowrs-std"}
 flowrs-img = {path = "../flowrs-img"}
 serde = "1.0.183"
 image = "0.24.7"
@@ -37,17 +35,6 @@ futures-executor = "0.3"
 log = "0.4.20"
 js-sys = "0.3.65"
 base64 = "0.21.5"
-
-[dependencies.web-sys]
-version = "0.3.64"
-features = [
-  'Headers',
-  'Request',
-  'RequestInit',
-  'RequestMode',
-  'Response',
-  'Window',
-]
 
 #[dev-dependencies]
 #wasm-bindgen-test = "0.3.37"

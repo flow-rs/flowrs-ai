@@ -5,10 +5,9 @@ mod nodes {
     use flowrs::{node::{ChangeObserver, Node}, connection::{connect, Edge}};
     use futures_executor::block_on;
 
-    use ndarray::{ArrayD, s};
+    use ndarray::{ArrayD, IxDyn};
     use wonnx::{Session, utils::InputTensor};
-    use std::{env, time::Instant, collections::HashMap};
-    use image::{imageops::FilterType, ImageBuffer, Pixel, Rgb};
+    use std::{time::Instant, collections::HashMap};
 
     #[test]
     fn benchmark_model_node() {
@@ -17,7 +16,8 @@ mod nodes {
             model_path: "src/models/opt-squeeze.onnx".to_string(),
             model_base64: "".to_string(),
         };
-        let model_input = load_image();
+        let shape = [1, 3, 224, 224];
+        let model_input = ArrayD::<f32>::zeros(IxDyn(&shape));
 
         let change_observer: ChangeObserver = ChangeObserver::new();  
 
@@ -41,10 +41,12 @@ mod nodes {
     }
 
     #[test]
-    fn benchmark_wonnx_raw() {
+    fn benchmark_wonnx() {
         // given
         let model_path = "src/models/opt-squeeze.onnx";
-        let model_input = load_image();
+        let shape = [1, 3, 224, 224];
+        let model_input = ArrayD::<f32>::zeros(IxDyn(&shape));
+        //let model_input = load_image();
         let session = block_on(Session::from_path(model_path)).unwrap();
         let num_executions = 100;
         let mut input_data: HashMap<String, InputTensor> = HashMap::new();
@@ -57,34 +59,5 @@ mod nodes {
         let elapsed = now.elapsed().as_millis();
         // then
         println!("Results: {}ms per execution \n", elapsed / num_executions);
-    }
-
-    fn load_image() -> ArrayD<f32> {
-        let image_path = env::current_dir()
-        .expect("Failed to obtain current directory")
-        .join("src/images/7.jpg");
-        println!("Image Path: {:?}", image_path);
-    
-        let image_buffer: ImageBuffer<Rgb<u8>, Vec<u8>> = image::open(image_path)
-            .unwrap()
-            .resize_to_fill(224, 224, FilterType::Nearest)
-            .to_rgb8();
-    
-        let mut array: ndarray::ArrayBase<ndarray::OwnedRepr<f32>, ndarray::Dim<[usize; 4]>> = ndarray::Array::from_shape_fn((1, 3, 224, 224), |(_, c, j, i)| {
-            let pixel = image_buffer.get_pixel(i as u32, j as u32);
-            let channels = pixel.channels();
-    
-            (channels[c] as f32) / 255.0
-        });
-    
-        let mean = [0.485, 0.456, 0.406];
-        let std = [0.229, 0.224, 0.225];
-        for c in 0..3 {
-            let mut channel_array = array.slice_mut(s![0, c, .., ..]);
-            channel_array -= mean[c];
-            channel_array /= std[c];
-        }
-    
-        array.into_dyn()
     }
 }

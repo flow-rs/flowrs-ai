@@ -17,7 +17,7 @@ preprocess = transforms.Compose([
 ])
 input_tensor = preprocess(input_image)
 input_batch = input_tensor.unsqueeze(0) 
-num_iters = 100
+num_iters = 1000
 with torch.no_grad():
     start = time.time()
     for _ in range(num_iters):
