@@ -1,4 +1,6 @@
 
+
+
 mod nodes {
 
     use flowrs_ai::model::{ModelNode, ModelConfig};
@@ -9,8 +11,9 @@ mod nodes {
     use wonnx::{Session, utils::InputTensor};
     use std::{time::Instant, collections::HashMap};
 
+    #[ignore]
     #[test]
-    fn benchmark_model_node() {
+    pub fn benchmark_model_node() {
         // given
         let model_config = ModelConfig {
             model_path: "src/models/opt-squeeze.onnx".to_string(),
@@ -28,6 +31,7 @@ mod nodes {
         // when
         let _ = model_node.input_model_config.send(model_config.clone());
         let _ = model_node.on_update();
+        println!("benchmarking ModelNode:");
         println!("Start benchmarks with {} iterations", num_executions);
         println!("...");
         let now = Instant::now();
@@ -40,17 +44,20 @@ mod nodes {
         println!("Result: {}ms per executions \n", elapsed / num_executions);
     }
 
+    #[ignore]
     #[test]
-    fn benchmark_wonnx() {
+    pub fn benchmark_wonnx() {
         // given
         let model_path = "src/models/opt-squeeze.onnx";
         let shape = [1, 3, 224, 224];
         let model_input = ArrayD::<f32>::zeros(IxDyn(&shape));
-        //let model_input = load_image();
         let session = block_on(Session::from_path(model_path)).unwrap();
         let num_executions = 100;
         let mut input_data: HashMap<String, InputTensor> = HashMap::new();
         input_data.insert("data".to_string(), model_input.as_slice().unwrap().into());
+        println!("benchmarking WONNX:");
+        println!("Start benchmarks with {} iterations", num_executions);
+        println!("...");
         // when
         let now = Instant::now();
         for _ in 1..num_executions {

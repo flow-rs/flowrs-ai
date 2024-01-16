@@ -11,7 +11,7 @@ mod nodes {
         // getting the image to resize
         let image_path = env::current_dir()
         .expect("Failed to obtain current directory")
-        .join("src/example_pic/crosswalk.jpg");
+        .join("src/images/7.jpg");
         let img = image::open(image_path).expect("Failed to open image");
         // creating scaling config
         let scaling_config = ScalingConfig{
