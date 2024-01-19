@@ -1,0 +1,1458 @@
+{
+    "name":"flowrs-ai",
+    "version":"1.0.0",
+    "crates":{
+        "flowrs_ai":{
+            "types": {},
+            "modules": {
+                "nodes": {
+                    "types": {},
+                    "modules": {
+                        "converter": {
+                            "types": {},
+                            "modules": {
+                                "csv2dataset": {
+                                    "modules": {},
+                                    "types": {
+                                        "CSVToDatasetConfig": {
+                                            "constructors":{
+                                               "Json":"FromJson"
+                                            }
+                                        },
+                                        "CSVToDatasetNode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "String"
+                                                        }
+                                                    }
+                                                },
+                                                "config_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "flowrs_ai::nodes::converter::csv2dataset::CSVToDatasetConfig"   
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "csv2ndarray": {
+                                    "modules": {},
+                                    "types": {
+                                        "CSVToNdarrayConfig": {
+                                            "constructors":{
+                                               "Json":"FromJson"
+                                            }
+                                        },
+                                        "CSVToNdarrayNode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "String"
+                                                        }
+                                                    }
+                                                },
+                                                "config_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "flowrs_ai::nodes::converter::csv2ndarray::CSVToNdarrayConfig"   
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "ndarray::Array2",
+                                                            "type_parameters": [
+                                                                {   
+                                                                        
+                                                                    "Generic": {
+                                                                        "name": "T"
+                                                                    }
+                                                                       
+                                                                }                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "ndarray2dataset": {
+                                    "modules": {},
+                                    "types": {
+                                        "NdarrayToDatasetNode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "ndarray::Array2",
+                                                            "type_parameters": [
+                                                                {   
+                                                                        
+                                                                    "Generic": {
+                                                                        "name": "T"
+                                                                    }
+                                                                       
+                                                                }                                                                
+                                                            ]
+                                                        }     
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "csv2dataset_encoding": {
+                                    "modules": {},
+                                    "types": {
+                                        "CSVToEncodedDatasetConfig": {
+                                            "constructors":{
+                                               "Json":"FromJson"
+                                            }
+                                        },
+                                        "CSVToEncodedDatasetNode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "String"
+                                                        }
+                                                    }
+                                                },
+                                                "config_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "flowrs_ai::nodes::converter::csv2dataset_encoding::CSVToEncodedDatasetConfig"   
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "scaling": {
+                            "types": {},
+                            "modules": {
+                                "l1normscaler": {
+                                    "modules": {},
+                                    "types": {
+                                        "L1NormScalerNode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "l2normscaler": {
+                                    "modules": {},
+                                    "types": {
+                                        "L2NormScalerNode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "maxnormscaler": {
+                                    "modules": {},
+                                    "types": {
+                                        "MaxNormScalerNode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "standardscaler": {
+                                    "modules": {},
+                                    "types": {
+                                        "StandardScalerNode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "maxabsscaler": {
+                                    "modules": {},
+                                    "types": {
+                                        "MaxAbsSclerNode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "minmaxscaler": {
+                                    "modules": {},
+                                    "types": {
+                                        "MinMaxScalerNode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "minmaxrangescaler": {
+                                    "modules": {},
+                                    "types": {
+                                        "MinMaxRangeScalerConfig": {
+                                            "constructors": {
+                                               "Json":"FromJson"
+                                            }
+                                        },
+                                        "MinMaxRangeScalerNode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                },
+                                                "config_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "flowrs_ai::nodes::scaling::minmaxrangescaler::MinMaxRangeScalerConfig"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "dimension_reduction": {
+                            "types": {},
+                            "modules": {
+                                "pca": {
+                                    "modules": {},
+                                    "types": {
+                                        "PCAConfig": {
+                                            "constructors": {
+                                               "Json":"FromJson"
+                                            }
+                                        },
+                                        "PCANode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                },
+                                                "config_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "flowrs_ai::nodes::dimension_reduction::pca::PCAConfig"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "tsne": {
+                                    "modules": {},
+                                    "types": {
+                                        "TsneConfig": {
+                                            "constructors": {
+                                               "Json":"FromJson"
+                                            }
+                                        },
+                                        "TsneNode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                },
+                                                "config_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "flowrs_ai::nodes::dimension_reduction::tsne::TsneConfig"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "diffusionmap": {
+                                    "modules": {},
+                                    "types": {
+                                        "DiffusionMapConfig": {
+                                            "constructors": {
+                                               "Json":"FromJson"
+                                            }
+                                        },
+                                        "DiffusionMapNode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                },
+                                                "config_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "flowrs_ai::nodes::dimension_reduction::diffusionmap::DiffusionMapConfig"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "clustering": {
+                            "types": {},
+                            "modules": {
+                                "kmeans": {
+                                    "modules": {},
+                                    "types": {
+                                        "KmeansConfig": {
+                                            "constructors": {
+                                                "Json":"FromJson"
+                                            }
+                                        },
+                                        "KmeansNode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                },
+                                                "config_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "flowrs_ai::nodes::clustering::kmeans::KmeansConfig"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "usize"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "dbscan": {
+                                    "modules": {},
+                                    "types": {
+                                        "DbscanConfig": {
+                                            "constructors": {
+                                                "Json":"FromJson"
+                                            }
+                                        },
+                                        "DbscanNode": {
+                                            "type_parameters": [
+                                                "T"
+                                            ],
+                                            "inputs": {
+                                                "data_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "()"
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                },
+                                                "config_input": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "flowrs_ai::nodes::clustering::dbscan::DbscanConfig"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "outputs": {
+                                                "output": {
+                                                    "type": {
+                                                        "Type": {
+                                                            "name": "linfa::DatasetBase",
+                                                            "type_parameters": [
+                                                                {   
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array2",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Generic": {
+                                                                                    "name": "T"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "Type": {
+                                                                        "name": "ndarray::Array1",
+                                                                        "type_parameters": [
+                                                                            {
+                                                                                "Type": {
+                                                                                    "name": "option",
+                                                                                    "type_parameters": [
+                                                                                        {
+                                                                                            "Type": {
+                                                                                                "name": "usize"
+                                                                                            }   
+                                                                                        }
+                                                                                    ]
+                                                                                }   
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                }
+                                                                
+                                                            ]
+                                                        }                                                          
+                                                    }
+                                                }
+                                            },
+                                            "constructors": {
+                                                "New":{
+                                                    "NewWithObserver":{
+                                                        
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
