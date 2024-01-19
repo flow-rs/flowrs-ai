@@ -3,7 +3,7 @@ POST http://127.0.0.1:3000/projects/ HTTP/1.1
 content-type: application/json
 
 {
-  "name": "flowrs_ai_runtime_test_dbscan",
+  "name": "flowrs_ai_runtime_test_l1normscaler",
   "version": "1.0.0",
   "packages": [
     {"name": "flowrs", "version": "1.0.0", "path": "../../../flowrs"}, 
@@ -29,11 +29,11 @@ content-type: application/json
             },
             "test_node": {
                 "node_type": "flowrs_ai::nodes::test_node::TestNode",
-                "type_parameters": {"T": "f64", "U": "usize"},
+                "type_parameters": {"T": "f64", "U": "()"},
                 "constructor": "New"
             },
             "scaling_node": {
-                "node_type": "flowrs_ai::nodes::clustering::dbscan::DbscanNode",
+                "node_type": "flowrs_ai::nodes::scaling::l1normscaler::L1NormScalerNode",
                 "type_parameters": {"T": "f64"},
                 "constructor": "New"
             }

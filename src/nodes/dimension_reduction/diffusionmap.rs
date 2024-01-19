@@ -1,4 +1,5 @@
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use wasm_timer::Instant;
 
 use flowrs::{node::{Node, UpdateError, ChangeObserver}, connection::{Input, Output}};
 use flowrs::RuntimeConnectable;
@@ -44,7 +45,8 @@ where
 
     config: DiffusionMapConfig,
 
-    cum_time: Duration,
+    cum_time_rust: Duration,
+    cum_time_wasm: f64,
     counter: usize
 }
 
@@ -59,7 +61,8 @@ where
             config_input: Input::new(),
             output: Output::new(change_observer),
             config: DiffusionMapConfig::new(2, 1),
-            cum_time: Duration::new(0, 0),
+            cum_time_rust: Duration::new(0, 0),
+            cum_time_wasm: 0.0,
             counter: 0
         }
     }
@@ -78,7 +81,17 @@ where
 
         // receiving data
         if let Ok(data) = self.data_input.next() {   
-            let start_time = Instant::now();
+
+            // let start_time_rust = wasm_timer::Instant::now();
+
+            #[cfg(target_arch = "wasm32")]
+            let window = web_sys::window().expect("should have a window in this context");
+            #[cfg(target_arch = "wasm32")] 
+            let performance = window
+                .performance()
+                .expect("performance should be available");
+            #[cfg(target_arch = "wasm32")]
+            let start_time_wasm = performance.now();
 
             let kernel = Kernel::params()
                 .kind(KernelType::Sparse(3))
@@ -95,13 +108,24 @@ where
 
             self.output.send(red_dataset).map_err(|e| UpdateError::Other(e.into()))?;
 
-            let end_time = Instant::now();
-            self.cum_time = self.cum_time.saturating_add(end_time - start_time);
+            #[cfg(target_arch = "wasm32")]
+            let end_time_wasm = performance.now();
+            #[cfg(target_arch = "wasm32")]
+            let elapsed_time =end_time_wasm - start_time_wasm;
+            // self.cum_time_wasm = self.cum_time_wasm + elapsed_time;
+
+            // let end_time_rust = wasm_timer::Instant::now();
+            // self.cum_time_rust = self.cum_time_rust.saturating_add(end_time_rust - start_time_rust);
+
             self.counter = self.counter + 1;
-            if self.counter == 10 {
-                println!("[DiffusionMapNode] Cum_Time: {:?}", self.cum_time);
+            if self.counter % 100 == 0 {
                 #[cfg(target_arch = "wasm32")]
-                crate::log(format!("[DiffusionMapNode] Cum_Time: {:?}", self.cum_time).as_str());
+                crate::log(format!("count: {:?}", self.counter).as_str());
+            }
+            if self.counter == 10000 {
+                // println!("[PCANode] Cum_Time: {:?}", self.cum_time_wasm);
+                #[cfg(target_arch = "wasm32")]
+                crate::log(format!("[PCANode] Cum_Time: {:?}", self.cum_time_wasm).as_str());
             }
        }
 
