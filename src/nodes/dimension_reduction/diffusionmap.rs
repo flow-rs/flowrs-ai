@@ -53,7 +53,7 @@ impl DiffusionMapConfig {
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct DiffusionMapNode<T>
 where
-    T: Clone,
+    T: Clone + Float,
 {
     /// The input port for receiving the Diffusion Map algorithm configuration.
     #[input]
@@ -73,7 +73,7 @@ where
 
 impl<T> DiffusionMapNode<T>
 where
-    T: Clone,
+    T: Clone + Float,
 {
     /// Create a new instance of `DiffusionMapNode`.
     ///

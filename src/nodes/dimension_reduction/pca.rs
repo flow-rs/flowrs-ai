@@ -5,7 +5,7 @@ use flowrs::{
 };
 
 use linfa::traits::{Fit, Predict};
-use linfa::DatasetBase;
+use linfa::{DatasetBase, Float};
 use linfa_reduction::Pca;
 use log::debug;
 use ndarray::{array, Array1, Array2};
@@ -47,7 +47,7 @@ impl PCAConfig {
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct PCANode<T>
 where
-    T: Clone,
+    T: Clone + Float,
 {
     /// The input port for receiving the PCA configuration.
     #[input]
@@ -67,7 +67,7 @@ where
 
 impl<T> PCANode<T>
 where
-    T: Clone,
+    T: Clone + Float,
 {
     /// Create a new instance of `PCANode`.
     ///

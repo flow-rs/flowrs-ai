@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct L2NormScalerNode<T>
 where
-    T: Clone,
+    T: Clone + Float,
 {
     /// The output port for sending the normalized data.
     #[output]
@@ -34,7 +34,7 @@ where
 
 impl<T> L2NormScalerNode<T>
 where
-    T: Clone,
+    T: Clone + Float,
 {
     /// Create a new instance of `L2NormScalerNode`.
     ///

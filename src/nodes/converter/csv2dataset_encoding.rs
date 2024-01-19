@@ -29,7 +29,7 @@ pub struct EncodingConfig {
     /// The list of ordinal columns.
     pub ordinals: Vec<String>,
     /// The list of other columns.
-    pub others: Vec<String>,
+    pub numerics: Vec<String>,
 }
 
 impl EncodingConfig {
@@ -40,7 +40,7 @@ impl EncodingConfig {
     /// - `separator`: The separator used in the CSV file.
     /// - `nominals`: The list of nominal columns.
     /// - `ordinals`: The list of ordinal columns.
-    /// - `others`: The list of other columns.
+    /// - `numerics`: The list of numeric columns.
     ///
     /// # Returns
     ///
@@ -49,13 +49,13 @@ impl EncodingConfig {
         separator: u8,
         nominals: Vec<String>,
         ordinals: Vec<String>,
-        others: Vec<String>,
+        numerics: Vec<String>,
     ) -> Self {
         EncodingConfig {
             separator,
             nominals,
             ordinals,
-            others,
+            numerics,
         }
     }
 }
@@ -132,7 +132,7 @@ where
         if let Ok(config) = self.config_input.next() {
             debug!(
                 "CSVToEncodedDatasetNode has received config: {}, {:?}, {:?}, {:?}",
-                config.separator, config.ordinals, config.nominals, config.others
+                config.separator, config.ordinals, config.nominals, config.numerics
             );
             self.config = config;
         }
@@ -172,7 +172,7 @@ where
 
             let other_indices: HashSet<usize> = self
                 .config
-                .others
+                .numerics
                 .iter()
                 .filter_map(|other| headers.iter().position(|header| header == other))
                 .collect();
@@ -235,7 +235,7 @@ where
             let mut combined_feature_names: Vec<String> = Vec::new();
             combined_feature_names.extend(one_hot_feature_names);
             combined_feature_names.extend(self.config.ordinals.clone());
-            combined_feature_names.extend(self.config.others.clone());
+            combined_feature_names.extend(self.config.numerics.clone());
 
             // Convert to DatasetBase with feature names
             let encoded_dataset: DatasetBase<
@@ -265,7 +265,7 @@ fn input_output_test() -> Result<(), UpdateError> {
         separator: b',',
         nominals: vec!["Food".to_string(), "Place".to_string()],
         ordinals: vec!["Rating".to_string(), "Level".to_string()],
-        others: vec!["Age".to_string(), "Height".to_string()],
+        numerics: vec!["Age".to_string(), "Height".to_string()],
     };
 
     let mut and: CSVToEncodedDatasetNode<f64> =
@@ -298,7 +298,7 @@ fn no_ordinals_test() -> Result<(), UpdateError> {
         separator: b',',
         nominals: vec!["Food".to_string(), "Place".to_string()],
         ordinals: vec![],
-        others: vec!["Age".to_string(), "Height".to_string()],
+        numerics: vec!["Age".to_string(), "Height".to_string()],
     };
 
     let mut and: CSVToEncodedDatasetNode<f64> =
@@ -331,7 +331,7 @@ fn no_nominals_test() -> Result<(), UpdateError> {
         separator: b',',
         nominals: vec![],
         ordinals: vec!["Rating".to_string(), "Level".to_string()],
-        others: vec!["Age".to_string(), "Height".to_string()],
+        numerics: vec!["Age".to_string(), "Height".to_string()],
     };
 
     let mut and: CSVToEncodedDatasetNode<f64> =

@@ -35,7 +35,7 @@ where
 
 impl<T> L1NormScalerNode<T>
 where
-    T: Clone,
+    T: Clone + Send + Float,
 {
     /// Create a new instance of `L1NormScalerNode`.
     ///

@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct MaxAbsScalerNode<T>
 where
-    T: Clone,
+    T: Clone + Float,
 {
     /// The output port for sending the scaled data.
     #[output]
@@ -34,7 +34,7 @@ where
 
 impl<T> MaxAbsScalerNode<T>
 where
-    T: Clone,
+    T: Clone + Float,
 {
     /// Create a new instance of `MaxAbsScalerNode`.
     ///

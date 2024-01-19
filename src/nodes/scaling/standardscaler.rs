@@ -23,7 +23,7 @@ use serde::{Deserialize, Serialize};
 #[derive(RuntimeConnectable, Deserialize, Serialize)]
 pub struct StandardScalerNode<T>
 where
-    T: Clone,
+    T: Clone + Float,
 {
     /// The output port for sending the scaled data.
     #[output]
@@ -36,7 +36,7 @@ where
 
 impl<T> StandardScalerNode<T>
 where
-    T: Clone,
+    T: Clone + Float,
 {
     /// Create a new instance of `StandardScalerNode`.
     ///
