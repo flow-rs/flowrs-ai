@@ -14,7 +14,7 @@
 
 #[cfg(test)]
 mod tests {
-    use std::{ptr::null, time::Instant};
+    use std::time::Instant;
 
     use flowrs::node::{ChangeObserver, Node};
     use flowrs_ai::{
@@ -29,7 +29,7 @@ mod tests {
         standardscaler::StandardScalerNode,
         tsne::{TsneConfig, TsneNode},
     };
-    use flowrs_std::{debug::DebugNode, value::ValueNode};
+    use flowrs_std::value::ValueNode;
     use linfa::DatasetBase;
 
     use log::info;
